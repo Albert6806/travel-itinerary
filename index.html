@@ -291,6 +291,43 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
     white-space:nowrap; }
   #editToggle:hover{ background:rgba(255,255,255,.22); }
   #editToggle.editing{ background:#c8622d; border-color:#c8622d; }
+
+  /* ===== 行程時間軸 ===== */
+  .tln{ margin:2px 0 4px; }
+  .tln-seg{ display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+    margin:0 0 0 7px; padding:5px 0 5px 20px; border-left:2px dashed var(--line);
+    color:var(--muted); font-size:12.5px; }
+  .tln-seg .mv{ font-weight:700; color:var(--brand2); }
+  .tln-seg a.qbtn{ font-size:11px; padding:2px 9px; border:1px solid var(--brand2);
+    color:var(--brand2); border-radius:999px; text-decoration:none; white-space:nowrap; }
+  .tln-seg a.qbtn:hover{ background:var(--brand2); color:#fff; }
+  .tln-stop{ position:relative; padding:0 0 10px 24px; border-left:2px solid var(--line); margin-left:7px; }
+  .tln-stop:last-child{ border-left-color:transparent; padding-bottom:0; }
+  .tln-stop .dotn{ position:absolute; left:-9px; top:0; width:18px; height:18px;
+    border-radius:50%; background:var(--brand); color:#fff; font-size:10px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; }
+  .tln-hd{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+  .tln-time{ font-weight:800; color:var(--brand); font-size:13px; }
+  .tln-name{ font-weight:800; font-size:15px; color:var(--ink); }
+  .tln-stay{ font-size:11px; background:#eaf3ee; color:#2c6e5a; padding:1px 9px; border-radius:999px; font-weight:600; }
+  .tln-map{ font-size:11px; color:var(--brand2); text-decoration:none; }
+  .tln-desc{ font-size:13px; color:#4a5a63; line-height:1.7; margin:5px 0 0; white-space:pre-wrap; cursor:pointer; }
+  .tln-desc.clip{ display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .tln-more{ font-size:11.5px; color:var(--brand2); cursor:pointer; margin-top:3px; display:inline-block; }
+
+  /* ===== 站點編輯器 ===== */
+  .se-item{ border:1px solid var(--line); border-radius:12px; padding:10px; margin:0 0 10px; background:#faf8f3; }
+  .se-item label{ font-size:11px; color:var(--muted); display:block; margin-bottom:2px; }
+  .se-row{ display:flex; gap:8px; align-items:center; margin-bottom:8px; }
+  .se-row .idx{ font-weight:800; color:#fff; background:var(--brand); width:22px; height:22px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:12px; flex:none; }
+  .se-row > input{ flex:1; font-weight:700; }
+  .se-tools{ display:flex; gap:5px; flex:none; }
+  .se-tools button{ border:1px solid var(--line); background:#fff; border-radius:8px; cursor:pointer; padding:2px 8px; font-size:13px; }
+  .se-mini{ display:flex; gap:8px; margin-bottom:8px; }
+  .se-mini > div{ flex:1; }
+  .se-q{ white-space:nowrap; border:1px solid var(--brand2); background:#fff; color:var(--brand2);
+    border-radius:8px; padding:0 10px; cursor:pointer; flex:none; }
 </style>
 
 <script>
@@ -390,6 +427,14 @@ function migrate(){
       if(!('stops'in d)){ d.stops=[]; changed=true; }
       if(!('area'in d)){ d.area=''; changed=true; }
       if(!('city'in d)){ d.city=''; changed=true; }
+      (d.stops||[]).forEach(sp=>{
+        if(!('time'in sp)){ sp.time=''; changed=true; }
+        if(!('move'in sp)){ sp.move=''; changed=true; }
+        if(!('moveMode'in sp)){ sp.moveMode='transit'; changed=true; }
+        if(!('stay'in sp)){ sp.stay=''; changed=true; }
+        if(!('desc'in sp)){ sp.desc=''; changed=true; }
+        if(!sp.desc){ const dsc=lookupDesc(sp.name); if(dsc){ sp.desc=dsc; changed=true; } }
+      });
     });
   });
   const st=DB.trips.find(t=>t.id===SEED.id);
@@ -651,26 +696,164 @@ function foodSection(d){
   return `<div class="routewrap"><h3>🍽️ ${esc(city)}・推薦美食</h3>
     <div class="note">⭐ 為參考評分 · 點「📍 地圖」看即時資訊、「🚶 住宿」算步行時間</div>${mini}</div>`;
 }
+/* ---------- 站點：地點介紹（預寫知名景點）/ 交通 / 走路自動估 ---------- */
+const DESC_DB=[
+  {k:['羅浮宮','Louvre'], d:'全球最大的藝術博物館，鎮館三寶是《蒙娜麗莎》、《米洛的維納斯》與《勝利女神》。前身是法國王宮，貝聿銘設計的玻璃金字塔是入口地標。'},
+  {k:['杜樂麗','Tuileries'], d:'羅浮宮與協和廣場之間的法式古典花園，17 世紀為凱薩琳皇后而建，是巴黎人野餐、曬太陽的經典去處。'},
+  {k:['協和廣場','Concorde'], d:'巴黎最大的廣場，法國大革命時期的斷頭台曾設於此，中央的埃及方尖碑有 3000 多年歷史。'},
+  {k:['聖徒禮拜堂','Sainte-Chapelle','聖禮拜堂'], d:'13 世紀哥德式禮拜堂，以 15 面高達 15 公尺的彩繪玻璃聞名，陽光穿透時宛如置身寶石盒。'},
+  {k:['凱旋門','Arc de Triomphe'], d:'拿破崙為紀念戰爭勝利而建，登頂可俯瞰 12 條大道呈放射狀展開的星形廣場，底下是無名英雄墓。'},
+  {k:['香榭','Champs'], d:'從凱旋門延伸到協和廣場的巴黎第一大道，兩側精品店與咖啡館林立，被譽為「世界最美大街」。'},
+  {k:['夏樂宮','Trocadéro','鐵塔全景'], d:'隔著塞納河正對艾菲爾鐵塔的觀景平台，是拍攝鐵塔全景與夜間點燈最經典的角度。'},
+  {k:['艾菲爾','鐵塔','Eiffel'], d:'1889 年萬國博覽會為巴黎打造的鐵塔，高 330 公尺，曾是世界最高建築，如今是巴黎的象徵。'},
+  {k:['塞納河','Seine'], d:'貫穿巴黎的母親河，兩岸被列為世界遺產，散步或搭遊船都能一次收集多座地標。'},
+  {k:['穆浮塔','Mouffetard'], d:'巴黎最古老的市集街之一，石板路兩旁滿是乳酪、熟食、麵包與小酒館，是體驗在地生活的好去處。'},
+  {k:['植物園','Jardin des Plantes'], d:'巴黎的皇家植物園，內有溫室、小型動物園與自然史博物館，鬧中取靜。'},
+  {k:['西庸','Chillon'], d:'矗立在日內瓦湖畔岩石上的中世紀水上城堡，是瑞士最多人參觀的古蹟，拜倫的詩讓它聲名大噪。'},
+  {k:['Saphorin','拉沃','Lavaux','Rivaz'], d:'拉沃葡萄園是世界遺產，梯田沿日內瓦湖陡坡而下，被說是受「三個太陽」（陽光、湖面反射、石牆蓄熱）眷顧的葡萄園。'},
+  {k:['蒙特勒','Montreux'], d:'日內瓦湖畔的度假小鎮，以每年的爵士音樂節聞名，湖濱大道花木扶疏，皇后樂團曾在此錄音。'},
+  {k:['馬特洪','教堂橋','Kirchbrücke','Matterhorn'], d:'策馬特的地標三角尖峰，海拔 4478 公尺，是三角巧克力的原型；教堂橋是拍攝日出金山的經典點。'},
+  {k:['高納葛拉特','Gornergrat'], d:'齒軌火車直上 3089 公尺觀景台，可正面飽覽馬特洪峰與周圍 29 座 4000 公尺級群峰。'},
+  {k:['Riffelsee'], d:'高納葛拉特線上的高山湖，無風時湖面倒映完整的馬特洪峰，是明信片級的對稱美景。'},
+  {k:['少女峰','Jungfrau'], d:'「歐洲之巔」，齒軌火車可達 3454 公尺的歐洲最高車站，斯芬克斯觀景台俯瞰全歐最長的阿萊奇冰河。'},
+  {k:['小夏戴克','Scheidegg'], d:'艾格峰、僧侶峰、少女峰三大名峰腳下的鐵道轉運站，也是登山健行的起點。'},
+  {k:['翁根','Wengen'], d:'懸在山崖上的無車小鎮，正對勞特布龍嫩山谷，寧靜而視野遼闊。'},
+  {k:['First'], d:'格林德瓦上方的觀景與探險勝地，有懸崖步道、飛索、卡丁車，一次滿足賞景與刺激。'},
+  {k:['Bachalpsee'], d:'First 山區的高山湖，健行約 1 小時可達，晴天能看到艾格峰倒映湖中，被稱為「阿爾卑斯之鏡」。'},
+  {k:['勞特布龍嫩','Lauterbrunnen'], d:'被 72 條瀑布環繞的 U 型冰河谷，據說是《魔戒》瑞文戴爾的靈感來源。'},
+  {k:['施陶河','Staubbach'], d:'勞特布龍嫩最著名的瀑布，落差近 300 公尺，水流化成霧氣飄落，歌德曾為它寫詩。'},
+  {k:['班霍夫','Bahnhofstrasse'], d:'策馬特的主街，精品、錶店、巧克力與紀念品聚集，全鎮無燃油車、逛起來悠閒。'},
+  {k:['Interlaken'], d:'夾在圖恩湖與布里恩茨湖之間的度假重鎮，是前往少女峰地區的門戶與交通樞紐。'},
+  {k:['Basel','巴塞爾'], d:'瑞士第三大城、德法瑞交界的文化城，萊茵河穿城而過，以藝術博物館與老城區聞名。'},
+  {k:['洛桑','Lausanne'], d:'日內瓦湖北岸的丘陵城市，國際奧會總部所在地，有「奧林匹克之都」之稱。'},
+  {k:['Visp','菲斯普'], d:'瓦萊州的鐵路轉運點，從這裡換乘登山火車前往策馬特。'},
+  {k:['戴高樂','Charles de Gaulle','CDG'], d:'巴黎主要國際機場，歐洲最繁忙的機場之一。'},
+  {k:['桃園','Taoyuan'], d:'台灣主要國際門戶機場。'}
+];
+function lookupDesc(name){
+  if(!name) return '';
+  const n=name.toLowerCase();
+  for(const e of DESC_DB){ if(e.k.some(k=>n.includes(k.toLowerCase()))) return e.d; }
+  return '';
+}
+const MOVE_ICON={walk:'🚶',transit:'🚆',cable:'🚠',drive:'🚗',flight:'✈️',boat:'⛴️'};
+const MOVE_LABEL={walk:'步行',transit:'大眾運輸',cable:'纜車',drive:'開車',flight:'航班',boat:'渡輪'};
+const MOVE_GMODE={walk:'walking',transit:'transit',cable:'transit',drive:'driving',flight:'transit',boat:'transit'};
+
+// 走路自動估：兩點經緯度 → 分鐘（1.35 路網係數、時速 4.8km）
+function walkMins(a,b){
+  if(!a||!b||a.lat==null||b.lat==null) return null;
+  const km=haversine(a.lat,a.lng,b.lat,b.lng)*1.35;
+  return Math.max(1, Math.round(km/4.8*60));
+}
+// 用 OpenStreetMap 免費地理編碼把地點轉成經緯度（快取，失敗就跳過）
+async function geocode(st){
+  if(!st || st.lat!=null) return st;
+  const q=st.q||st.name; if(!q) return st;
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q));
+    const j=await r.json();
+    if(j&&j[0]){ st.lat=+j[0].lat; st.lng=+j[0].lon; } else { st.lat=0; st.lng=0; }
+  }catch(e){}
+  return st;
+}
+// 背景把某天所有「步行段」的通勤時間估好，完成後刷新畫面
+let _estimating=false;
+async function estimateWalks(i){
+  if(_estimating) return; _estimating=true;
+  try{
+    const d=trip().days[i]; const s=d.stops||[]; let any=false;
+    for(let k=1;k<s.length;k++){
+      if(s[k].moveMode==='walk' && !s[k].move && s[k]._autowalk==null){
+        await geocode(s[k-1]); await geocode(s[k]);
+        const m=walkMins(s[k-1],s[k]);
+        s[k]._autowalk = m!=null? m : 0;
+        if(m!=null) any=true;
+      }
+    }
+    const dm=document.getElementById('dayModal');
+    if(any && dm && dm.classList.contains('on')) openDay(i);
+  }finally{ _estimating=false; }
+}
+
+/* ---------- 站點編輯器（「編輯這天」用） ---------- */
+let _edStops=[];
+function stopEditorHtml(){
+  const rows=_edStops.map((s,i)=>`
+    <div class="se-item">
+      <div class="se-row">
+        <span class="idx">${i+1}</span>
+        <input placeholder="地點名稱，例：羅浮宮" value="${esc(s.name||'')}" oninput="_edStops[${i}].name=this.value">
+        <div class="se-tools">
+          <button type="button" onclick="moveStop(${i},-1)" title="上移">▲</button>
+          <button type="button" onclick="moveStop(${i},1)" title="下移">▼</button>
+          <button type="button" onclick="delStop(${i})" title="刪除">🗑</button>
+        </div>
+      </div>
+      <div class="se-mini">
+        <div><label>抵達時刻</label><input placeholder="09:00" value="${esc(s.time||'')}" oninput="_edStops[${i}].time=this.value"></div>
+        <div><label>停留多久</label><input placeholder="例：2h" value="${esc(s.stay||'')}" oninput="_edStops[${i}].stay=this.value"></div>
+      </div>
+      ${i>0?`<div class="se-mini">
+        <div><label>怎麼來的</label><select onchange="_edStops[${i}].moveMode=this.value">
+          ${Object.keys(MOVE_LABEL).map(m=>`<option value="${m}" ${(s.moveMode||'transit')===m?'selected':''}>${MOVE_ICON[m]} ${MOVE_LABEL[m]}</option>`).join('')}
+        </select></div>
+        <div><label>通勤時間（可按「查」看 Google 再填）</label>
+          <div style="display:flex;gap:6px">
+            <input placeholder="例：3h40m" value="${esc(s.move||'')}" oninput="_edStops[${i}].move=this.value">
+            <button type="button" class="se-q" onclick="queryMove(${i})">🔎 查</button>
+          </div>
+        </div>
+      </div>`:'<div class="hint" style="margin:-2px 0 8px">第一站＝當天起點，不用填通勤。</div>'}
+      <div><label>地點介紹（為什麼有名、看點是什麼）</label>
+        <textarea placeholder="留空的話，知名景點我會自動幫你補上介紹…" oninput="_edStops[${i}].desc=this.value" style="min-height:60px">${esc(s.desc||'')}</textarea></div>
+    </div>`).join('');
+  return `<div id="stopEditor">${rows||'<div class="hint">還沒有站點，按下方新增。</div>'}</div>
+    <button type="button" class="btn ghost" onclick="addStop()">➕ 新增一站</button>`;
+}
+function refreshStopEditor(){ const el=document.getElementById('stopEditorWrap'); if(el) el.innerHTML=stopEditorHtml(); }
+function addStop(){ _edStops.push({name:'',q:'',time:'',move:'',moveMode:'transit',stay:'',desc:''}); refreshStopEditor(); }
+function delStop(i){ _edStops.splice(i,1); refreshStopEditor(); }
+function moveStop(i,dir){ const j=i+dir; if(j<0||j>=_edStops.length) return;
+  const t=_edStops[i]; _edStops[i]=_edStops[j]; _edStops[j]=t; refreshStopEditor(); }
+function queryMove(i){
+  if(i<1) return;
+  const a=_edStops[i-1].name, b=_edStops[i].name;
+  if(!a||!b){ toast('前後兩站都要先填地點名'); return; }
+  window.open(mapsUrl(a,b,MOVE_GMODE[_edStops[i].moveMode]||'transit'),'_blank');
+  toast('看到時間後，填回「通勤時間」欄');
+}
+
 function routeSection(d){
   const s=d.stops||[];
-  let inner;
-  if(!s.length){ inner='<div class="empty">這天還沒設定站點，點下方「✏️ 編輯這天」新增。</div>'; }
-  else{
-    inner=s.map((st,i)=>{
-      let h=`<div class="stop"><span class="dot">${i+1}</span><span class="nm">${esc(st.name)}</span></div>`;
-      if(i<s.length-1){
-        const a=st.q||st.name, b=s[i+1].q||s[i+1].name;
-        h+=`<div class="seg">
-          <a class="navb walk" href="${mapsUrl(a,b,'walking')}" target="_blank" rel="noopener">🚶 步行</a>
-          <a class="navb tran" href="${mapsUrl(a,b,'transit')}" target="_blank" rel="noopener">🚇 大眾運輸</a>
-        </div>`;
-      }
-      return h;
-    }).join('');
+  if(!s.length){
+    return `<div class="routewrap"><h3>🧭 行程時間軸</h3>
+      <div class="empty">這天還沒設定站點，點下方「✏️ 編輯這天」新增。</div></div>`;
   }
-  return `<div class="routewrap"><h3>🧭 路線導航</h3>
-    <div class="note">點按鈕開 Google 地圖，即時顯示時間與距離</div>
-    <div class="route">${inner}</div></div>`;
+  const idx=trip().days.indexOf(d);
+  const items=s.map((st,i)=>{
+    let seg='';
+    if(i>0){
+      const mode=st.moveMode||'transit';
+      const a=s[i-1].q||s[i-1].name, b=st.q||st.name;
+      let mv=st.move;
+      if(!mv && mode==='walk' && st._autowalk) mv='約 '+st._autowalk+' 分（步行估）';
+      seg=`<div class="tln-seg"><span>${MOVE_ICON[mode]||'🚆'}</span>`+
+        `<span class="mv">${mv?esc(mv):(MOVE_LABEL[mode]||'交通')}</span>`+
+        `<a class="qbtn" href="${mapsUrl(a,b,MOVE_GMODE[mode]||'transit')}" target="_blank" rel="noopener">🔎 查交通</a></div>`;
+    }
+    const stay = st.stay? `<span class="tln-stay">⏱ 停留 ${esc(st.stay)}</span>`:'';
+    const time = st.time? `<span class="tln-time">${esc(st.time)}</span>`:'';
+    const map = `<a class="tln-map" href="${mapsSearch(st.q||st.name)}" target="_blank" rel="noopener">📍地圖</a>`;
+    const desc = st.desc? `<div class="tln-desc clip" onclick="this.classList.toggle('clip');this.nextElementSibling.textContent=this.classList.contains('clip')?'▾ 展開介紹':'▴ 收合';">${esc(st.desc)}</div>`+
+      `<span class="tln-more" onclick="var p=this.previousElementSibling;p.classList.toggle('clip');this.textContent=p.classList.contains('clip')?'▾ 展開介紹':'▴ 收合';">▾ 展開介紹</span>`:'';
+    return `${seg}<div class="tln-stop"><span class="dotn">${i+1}</span>`+
+      `<div class="tln-hd">${time}<span class="tln-name">${esc(st.name)}</span>${stay}${map}</div>${desc}</div>`;
+  }).join('');
+  setTimeout(()=>estimateWalks(idx),60);
+  return `<div class="routewrap"><h3>🧭 行程時間軸</h3>
+    <div class="note">通勤點「🔎 查交通」看 Google 即時時間；步行段會自動估算</div>
+    <div class="tln">${items}</div></div>`;
 }
 function openDay(i){
   const d=trip().days[i];
@@ -699,6 +882,7 @@ function openDay(i){
 }
 function editDay(i){
   const d=trip().days[i];
+  _edStops=deepcopy(d.stops||[]);
   document.getElementById('dayModalBody').innerHTML=`
     <div class="sheet-hd"><button class="close" onclick="openDay(${i})">×</button>
       <div class="d">編輯 Day ${i+1} · ${fmtDate(d.date)}</div><h2>編輯行程</h2></div>
@@ -710,9 +894,9 @@ function editDay(i){
       <div class="field"><label>住宿地點</label><input id="e_lodge" value="${esc(d.lodging)}"></div>
       <div class="field"><label>訂房／參考連結</label><input id="e_link" value="${esc(d.link)}" placeholder="https://..."></div>
       <div class="field"><label>當日花費（${trip().currency}）</label><input id="e_price" type="number" value="${d.price!=null?d.price:''}" placeholder="留空代表無"></div>
-      <div class="field"><label>導航站點（一行一站，依順序）</label>
-        <textarea id="e_stops" style="min-height:130px">${esc((d.stops||[]).map(s=> s.name===s.q ? s.name : s.name+' | '+s.q).join('\n'))}</textarea>
-        <div class="hint">一行一個景點，Google 地圖會依這個順序算路線。<br>想指定精確地點可寫「<b>顯示名 | Google查詢字</b>」，例：<code>羅浮宮 | Musée du Louvre, Paris</code>。只寫顯示名也可以。</div></div>
+      <div class="field"><label>每日站點（地點・時刻・通勤・停留・介紹，依順序）</label>
+        <div id="stopEditorWrap">${stopEditorHtml()}</div>
+        <div class="hint">時間軸會依這個順序呈現。通勤時間按「🔎 查」看 Google 結果再填；停留自己填；知名景點的介紹會自動補上。</div></div>
       <div style="display:flex;gap:10px">
         <div class="field" style="flex:1"><label>地區（導航查詢用）</label><input id="e_area" value="${esc(d.area||'')}" placeholder="例：Paris"></div>
         <div class="field" style="flex:1"><label>城市（對應美食清單）</label><input id="e_city" value="${esc(d.city||'')}" placeholder="例：巴黎"></div>
@@ -728,12 +912,11 @@ function saveDay(i){
   d.title=val('e_title'); d.morning=val('e_m'); d.afternoon=val('e_a'); d.evening=val('e_e');
   d.lodging=val('e_lodge'); d.link=val('e_link'); d.area=val('e_area'); d.city=val('e_city');
   const p=val('e_price'); d.price = p===''?null:Number(p);
-  d.stops = val('e_stops').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
-    const parts=l.split('|');
-    const name=parts[0].trim();
-    let q = parts[1]!==undefined ? parts[1].trim() : name;
-    if(parts[1]===undefined && d.area) q = name+' '+d.area;   // 只寫名字時自動補地區
-    return {name:name, q:q};
+  d.stops = _edStops.filter(s=>(s.name||'').trim()).map(s=>{
+    const name=(s.name||'').trim();
+    let q=(s.q||'').trim(); if(!q) q = d.area? name+' '+d.area : name;
+    return {name, q, time:(s.time||'').trim(), move:(s.move||'').trim(),
+      moveMode:s.moveMode||'transit', stay:(s.stay||'').trim(), desc:(s.desc||'').trim()};
   });
   save(); renderAll(); openDay(i); toast('已儲存');
 }

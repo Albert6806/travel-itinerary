@@ -264,11 +264,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
 <footer>離線可用 · 資料存在此裝置瀏覽器 · 建議加入主畫面當 App 用</footer>
 
 <!-- Day detail / edit modal -->
-<div class="modal" id="dayModal" onclick="if(event.target===this)closeModal('dayModal')">
+<div class="modal" id="dayModal">
   <div class="sheet"><div id="dayModalBody"></div></div>
 </div>
 <!-- Manage modal -->
-<div class="modal" id="manageModal" onclick="if(event.target===this)closeModal('manageModal')">
+<div class="modal" id="manageModal">
   <div class="sheet"><div id="manageBody"></div></div>
 </div>
 
@@ -328,6 +328,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .se-mini > div{ flex:1; }
   .se-q{ white-space:nowrap; border:1px solid var(--brand2); background:#fff; color:var(--brand2);
     border-radius:8px; padding:0 10px; cursor:pointer; flex:none; }
+  .dc-stops{ font-size:12.5px; color:var(--muted); line-height:1.7; padding:4px 0 2px; }
+  .close{ cursor:pointer; }
 </style>
 
 <script>
@@ -508,6 +510,12 @@ function slot(cls,tag,txt){
   return `<div class="slot ${cls} ${empty?'empty':''}"><span class="tag">${tag}</span>`+
     `<span class="txt">${empty?'—':esc(txt.split('\n')[0])}</span></div>`;
 }
+function daySummary(d){
+  const s=d.stops||[];
+  if(!s.length) return '<div class="dc-stops" style="opacity:.55">點卡片編輯、新增站點</div>';
+  const names=s.slice(0,4).map(x=>esc(x.name)).join(' › ');
+  return `<div class="dc-stops">📍 ${s.length} 站　${names}${s.length>4?' …':''}</div>`;
+}
 function dayCard(d,i){
   const price = d.price!=null ? `<span class="dc-price">$${money(d.price)}</span>`:'<span class="dc-price" style="color:var(--muted);font-weight:600">—</span>';
   return `<div class="daycard" onclick="openDay(${i})">
@@ -516,11 +524,7 @@ function dayCard(d,i){
       <div class="dc-date">${fmtDate(d.date)}</div>
       <div class="dc-title">${esc(d.title||'行程')}</div>
     </div>
-    <div class="dc-body">
-      ${slot('am','上午',d.morning)}
-      ${slot('pm','下午',d.afternoon)}
-      ${slot('ev','晚上',d.evening)}
-    </div>
+    <div class="dc-body">${daySummary(d)}</div>
     <div class="dc-foot">
       <span class="dc-lodge">${d.lodging?('🏨 '+esc(d.lodging)):'<span style=\"opacity:.5\">無住宿</span>'}</span>
       ${price}
@@ -861,9 +865,6 @@ function routeSection(d){
 }
 function openDay(i){
   const d=trip().days[i];
-  const tl=[['am','上午',d.morning],['pm','下午',d.afternoon],['ev','晚上',d.evening]]
-    .map(([c,l,txt])=> txt.trim()? `<div class="tlrow ${c}"><div class="lab"><span class="b">${l}</span></div>`+
-      `<div class="content">${linkify(txt)}</div></div>`:'').join('') || '<div class="hint">這天還沒有安排行程。</div>';
   const info = `<div class="info-row">
       <div class="info-box"><div class="k">🏨 住宿</div><div class="v">${d.lodging?esc(d.lodging):'—'}</div>
         ${d.link?`<a class="linkbtn" href="${esc(d.link)}" target="_blank" rel="noopener">🔗 開啟訂房連結</a>`:''}</div>
@@ -876,9 +877,8 @@ function openDay(i){
       <h2>${esc(d.title||'行程')}</h2>
     </div>
     <div class="sheet-bd">
-      <div class="tl">${tl}</div>
-      ${info}
       ${routeSection(d)}
+      ${info}
       ${foodSection(d)}
       <div class="btn-row"><button class="editbtn" onclick="editDay(${i})">✏️ 編輯這天</button></div>
     </div>`;
@@ -892,9 +892,6 @@ function editDay(i){
       <div class="d">編輯 Day ${i+1} · ${fmtDate(d.date)}</div><h2>編輯行程</h2></div>
     <div class="sheet-bd">
       <div class="field"><label>主題標題</label><input id="e_title" value="${esc(d.title||'')}"></div>
-      <div class="field"><label>上午</label><textarea id="e_m">${esc(d.morning)}</textarea></div>
-      <div class="field"><label>下午</label><textarea id="e_a">${esc(d.afternoon)}</textarea></div>
-      <div class="field"><label>晚上</label><textarea id="e_e">${esc(d.evening)}</textarea></div>
       <div class="field"><label>住宿地點</label><input id="e_lodge" value="${esc(d.lodging)}"></div>
       <div class="field"><label>訂房／參考連結</label><input id="e_link" value="${esc(d.link)}" placeholder="https://..."></div>
       <div class="field"><label>當日花費（${trip().currency}）</label><input id="e_price" type="number" value="${d.price!=null?d.price:''}" placeholder="留空代表無"></div>
@@ -913,7 +910,7 @@ function editDay(i){
 }
 function saveDay(i){
   const d=trip().days[i];
-  d.title=val('e_title'); d.morning=val('e_m'); d.afternoon=val('e_a'); d.evening=val('e_e');
+  d.title=val('e_title');
   d.lodging=val('e_lodge'); d.link=val('e_link'); d.area=val('e_area'); d.city=val('e_city');
   const p=val('e_price'); d.price = p===''?null:Number(p);
   d.stops = _edStops.filter(s=>(s.name||'').trim()).map(s=>{

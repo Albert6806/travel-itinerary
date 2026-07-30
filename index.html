@@ -750,6 +750,8 @@ function walkMins(a,b){
 async function geocode(st){
   if(!st || st.lat!=null) return st;
   const q=st.q||st.name; if(!q) return st;
+  const cm=(''+q).match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);  // 直接填經緯度就用它
+  if(cm){ st.lat=+cm[1]; st.lng=+cm[2]; return st; }
   try{
     const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q));
     const j=await r.json();
@@ -790,6 +792,8 @@ function stopEditorHtml(){
           <button type="button" onclick="delStop(${i})" title="刪除">🗑</button>
         </div>
       </div>
+      <div style="margin-bottom:8px"><label>🗺️ 地圖定位（實際地址／最近地標，留空就用地點名。私人民宿建議填這個才抓得到通勤）</label>
+        <input placeholder="例：30 Rue Mouffetard, Paris　或　48.838, 2.352" value="${esc(s.q||'')}" oninput="_edStops[${i}].q=this.value"></div>
       <div class="se-mini">
         <div><label>抵達時刻</label><input placeholder="09:00" value="${esc(s.time||'')}" oninput="_edStops[${i}].time=this.value"></div>
         <div><label>停留多久</label><input placeholder="例：2h" value="${esc(s.stay||'')}" oninput="_edStops[${i}].stay=this.value"></div>

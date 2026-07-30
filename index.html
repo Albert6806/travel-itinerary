@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1b3a4b">
+<title>旅遊行程系統</title>
+<style>
+:root{
+  --bg:#f4f1ea; --card:#ffffff; --ink:#22303a; --muted:#6b7a85;
+  --line:#e6e0d4; --brand:#1b3a4b; --brand2:#2c6e7f; --accent:#c8622d;
+  --gold:#c99a3a; --am:#e9a23b; --pm:#3a86a8; --ev:#5b5b8a;
+  --ok:#2e9e6b; --shadow:0 6px 24px rgba(30,45,55,.10);
+  --radius:18px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.6;
+  padding-bottom:80px;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none}
+a{color:inherit}
+.wrap{max-width:1100px;margin:0 auto;padding:0 16px}
+
+/* Header */
+header{
+  background:linear-gradient(135deg,#1b3a4b 0%,#2c6e7f 60%,#3a86a8 100%);
+  color:#fff;padding:18px 0 20px;position:relative;overflow:hidden;
+}
+header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;height:200px;
+  background:radial-gradient(circle,rgba(201,154,58,.35),transparent 70%);pointer-events:none}
+.htop{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;letter-spacing:.5px;opacity:.92}
+.brand .logo{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.16);
+  display:grid;place-items:center;font-size:17px}
+.tripsel{display:flex;align-items:center;gap:8px}
+.tripsel select{
+  background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.25);
+  border-radius:10px;padding:7px 10px;font-size:14px;font-weight:600;max-width:190px}
+.tripsel select option{color:#22303a}
+.iconbtn{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.14);
+  color:#fff;display:grid;place-items:center;font-size:17px;border:1px solid rgba(255,255,255,.2)}
+.iconbtn:active{transform:scale(.94)}
+.htitle{margin-top:14px}
+.htitle h1{margin:0;font-size:26px;font-weight:800;letter-spacing:.5px}
+.htitle .sub{opacity:.85;font-size:14px;margin-top:2px}
+.hmeta{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;font-size:13px}
+.hmeta .chip{background:rgba(255,255,255,.15);padding:6px 12px;border-radius:999px;
+  display:flex;align-items:center;gap:6px;font-weight:600}
+
+/* Tabs */
+.tabs{display:flex;gap:6px;margin:16px 0 6px;background:#fff;padding:6px;border-radius:14px;
+  box-shadow:var(--shadow);position:sticky;top:8px;z-index:20}
+.tabs button{flex:1;padding:10px 6px;border-radius:10px;font-weight:700;font-size:14px;
+  color:var(--muted);transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.tabs button.on{background:var(--brand);color:#fff}
+.tabs .em{font-size:16px}
+
+/* Section */
+.view{padding:16px 0 30px;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Day cards */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.daycard{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  overflow:hidden;cursor:pointer;transition:.18s;border:1px solid var(--line);display:flex;flex-direction:column}
+.daycard:active{transform:scale(.985)}
+.daycard:hover{box-shadow:0 10px 30px rgba(30,45,55,.16)}
+.dc-top{padding:14px 16px 10px;background:linear-gradient(120deg,#fbf8f1,#fff);position:relative}
+.dc-daynum{position:absolute;right:14px;top:12px;font-size:12px;font-weight:800;color:#fff;
+  background:var(--brand2);border-radius:8px;padding:3px 9px}
+.dc-date{font-size:13px;color:var(--muted);font-weight:600}
+.dc-title{font-size:17px;font-weight:800;margin-top:3px;line-height:1.35;padding-right:52px}
+.dc-body{padding:6px 16px 12px;flex:1;display:flex;flex-direction:column;gap:7px}
+.slot{display:flex;gap:9px;align-items:flex-start;font-size:13px}
+.slot .tag{flex:none;width:42px;text-align:center;font-weight:800;font-size:11px;color:#fff;
+  border-radius:6px;padding:3px 0;margin-top:1px}
+.slot.am .tag{background:var(--am)} .slot.pm .tag{background:var(--pm)} .slot.ev .tag{background:var(--ev)}
+.slot .txt{color:#41525c;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.slot.empty{opacity:.4}
+.dc-foot{border-top:1px dashed var(--line);padding:10px 16px;display:flex;
+  justify-content:space-between;align-items:center;gap:8px;background:#fcfbf7}
+.dc-lodge{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+.dc-price{font-size:13px;font-weight:800;color:var(--accent);white-space:nowrap}
+
+/* Modal */
+.modal{position:fixed;inset:0;background:rgba(20,30,38,.55);backdrop-filter:blur(3px);
+  display:none;align-items:flex-end;justify-content:center;z-index:100}
+.modal.on{display:flex}
+.sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;
+  border-radius:22px 22px 0 0;animation:up .28s cubic-bezier(.2,.9,.3,1)}
+@media(min-width:680px){.modal{align-items:center}.sheet{border-radius:22px}}
+@keyframes up{from{transform:translateY(60px);opacity:.6}to{transform:none;opacity:1}}
+.sheet-hd{position:sticky;top:0;background:linear-gradient(135deg,#1b3a4b,#2c6e7f);color:#fff;
+  padding:18px 20px 16px;border-radius:22px 22px 0 0;z-index:2}
+.sheet-hd .close{position:absolute;right:14px;top:14px;width:34px;height:34px;border-radius:50%;
+  background:rgba(255,255,255,.2);color:#fff;font-size:18px;display:grid;place-items:center}
+.sheet-hd .d{font-size:13px;opacity:.85;font-weight:600}
+.sheet-hd h2{margin:3px 46px 0 0;font-size:21px;font-weight:800}
+.sheet-bd{padding:16px 18px 30px}
+.tl{position:relative;padding-left:8px}
+.tlrow{display:flex;gap:12px;margin-bottom:14px}
+.tlrow .lab{flex:none;width:46px}
+.tlrow .lab .b{font-weight:800;font-size:12px;color:#fff;border-radius:8px;padding:5px 0;
+  text-align:center;display:block}
+.tlrow.am .b{background:var(--am)} .tlrow.pm .b{background:var(--pm)} .tlrow.ev .b{background:var(--ev)}
+.tlrow .content{flex:1;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:var(--shadow);
+  font-size:14px;color:#39474f;white-space:pre-wrap;word-break:break-word}
+.tlrow .content a{color:var(--brand2);font-weight:700;word-break:break-all}
+.info-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+.info-box{flex:1;min-width:150px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+.info-box .k{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:4px}
+.info-box .v{font-size:15px;font-weight:800}
+.linkbtn{display:inline-flex;align-items:center;gap:7px;background:var(--brand2);color:#fff;
+  padding:9px 14px;border-radius:11px;font-weight:700;font-size:13.5px;text-decoration:none;margin-top:8px}
+.linkbtn:active{transform:scale(.96)}
+.editbtn{background:var(--card);border:1px solid var(--line);color:var(--brand);
+  padding:9px 14px;border-radius:11px;font-weight:700;font-size:13.5px;margin-top:8px}
+
+/* Cost view */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:18px;border:1px solid var(--line);margin-bottom:14px}
+.bigstat{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.stat{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;
+  border:1px solid var(--line)}
+.stat .k{font-size:12.5px;color:var(--muted);font-weight:700}
+.stat .v{font-size:26px;font-weight:800;margin-top:3px;color:var(--brand)}
+.stat .v.accent{color:var(--accent)}
+.stat .u{font-size:13px;color:var(--muted);font-weight:600}
+.costlist .row{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;
+  border-bottom:1px solid var(--line);gap:10px}
+.costlist .row:last-child{border-bottom:none}
+.costlist .l{display:flex;flex-direction:column}
+.costlist .l .d{font-size:14px;font-weight:700}
+.costlist .l .s{font-size:12px;color:var(--muted)}
+.costlist .amt{font-weight:800;color:var(--accent);font-size:15px}
+.costlist .amt.none{color:var(--muted);font-weight:600;font-size:13px}
+
+/* Checklist */
+.checkhd{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.checkhd h3{margin:0;font-size:17px;font-weight:800;display:flex;align-items:center;gap:8px}
+.progress{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin:8px 0 14px}
+.progress i{display:block;height:100%;background:linear-gradient(90deg,var(--brand2),var(--ok));border-radius:99px;transition:.3s}
+.chkitem{display:flex;align-items:center;gap:11px;padding:11px 6px;border-bottom:1px solid var(--line)}
+.chkitem:last-child{border-bottom:none}
+.chkitem .box{width:24px;height:24px;border-radius:8px;border:2px solid var(--line);flex:none;
+  display:grid;place-items:center;transition:.15s;font-size:14px;color:#fff}
+.chkitem.done .box{background:var(--ok);border-color:var(--ok)}
+.chkitem.done .t{text-decoration:line-through;color:var(--muted)}
+.chkitem .t{flex:1;font-size:14.5px}
+.chkitem .del{color:var(--muted);font-size:16px;padding:4px 6px;opacity:.6}
+.addrow{display:flex;gap:8px;margin-top:12px}
+.addrow input{flex:1;padding:11px 13px;border:1px solid var(--line);border-radius:11px;font-size:14px;
+  background:#fff;color:var(--ink)}
+.addrow button{background:var(--brand);color:#fff;padding:0 18px;border-radius:11px;font-weight:700;font-size:14px}
+
+/* route / navigation */
+.routewrap{margin-top:20px}
+.routewrap h3{font-size:16px;margin:0 0 4px;display:flex;align-items:center;gap:8px}
+.routewrap .note{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:10px}
+.route{background:#fff;border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+.stop{display:flex;align-items:center;gap:11px}
+.stop .dot{width:26px;height:26px;border-radius:50%;background:var(--brand);color:#fff;
+  display:grid;place-items:center;font-size:12px;font-weight:800;flex:none}
+.stop .nm{font-weight:700;font-size:14.5px;color:var(--ink)}
+.seg{margin:5px 0 5px 12px;padding:4px 0 4px 18px;border-left:2px dashed var(--line);
+  display:flex;align-items:center;gap:8px}
+.navb{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:800;
+  padding:7px 12px;border-radius:9px;text-decoration:none;transition:.12s}
+.navb:active{transform:scale(.94)}
+.navb.walk{background:#e8f4ee;color:#1f7a4d}
+.navb.tran{background:#e8f0f8;color:#22557f}
+.route .empty{color:var(--muted);font-size:13px}
+
+/* food */
+.food-hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px}
+.chip2{padding:8px 14px;border-radius:999px;font-weight:700;font-size:13px;background:#fff;
+  color:var(--muted);border:1px solid var(--line)}
+.chip2.on{background:var(--brand);color:#fff;border-color:var(--brand)}
+.locbtn{background:var(--accent);color:#fff;padding:8px 14px;border-radius:999px;font-weight:800;font-size:13px;
+  display:inline-flex;align-items:center;gap:6px}
+.locbtn:active{transform:scale(.95)}
+.food-group{margin-bottom:18px}
+.food-group .gh{font-size:15px;font-weight:800;margin:0 0 8px;display:flex;align-items:center;gap:7px;color:var(--brand)}
+.foodcard{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:12px 14px;box-shadow:var(--shadow);margin-bottom:10px;align-items:flex-start}
+.fc-cat{flex:none;font-size:12px;font-weight:800;color:var(--brand2);background:#eaf1f5;
+  border-radius:9px;padding:7px 9px;white-space:nowrap;max-width:96px;text-align:center;line-height:1.3}
+.fc-main{flex:1;min-width:0}
+.fc-name{font-weight:800;font-size:15px}
+.fc-meta{display:flex;align-items:center;gap:10px;margin-top:3px;font-size:12.5px;font-weight:700}
+.fc-meta .star{color:#e0a012}
+.fc-meta .prc{color:#2e9e6b}
+.fc-note{font-size:13px;color:var(--muted);margin-top:3px}
+.fc-actions{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
+.fc-del{color:var(--muted);font-size:15px;padding:3px 6px;opacity:.55;margin-left:auto}
+.fc-edit{color:var(--muted);font-size:14px;padding:3px 6px;opacity:.7}
+.navb.walk2{background:#eef2f6;color:#42525c}
+.fm-meta{font-size:11.5px;font-weight:700;color:#b0870f;margin-top:1px}
+.foodmini{display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;
+  padding:10px 12px;box-shadow:var(--shadow);margin-bottom:8px}
+.fm-cat{flex:none;font-size:19px;width:28px;text-align:center}
+.fm-body{flex:1;min-width:0}
+.fm-name{font-weight:700;font-size:14px}
+.fm-note{font-size:12px;color:var(--muted);white-space:normal}
+.fm-btn{flex:none}
+
+/* generic buttons / forms */
+.btn{background:var(--brand);color:#fff;padding:11px 16px;border-radius:12px;font-weight:700;font-size:14px}
+.btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--line)}
+.btn.danger{background:#fff;color:#c0392b;border:1px solid #edd}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:13px;font-weight:700;color:var(--muted);margin-bottom:5px}
+.field input,.field textarea{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:11px;
+  font-size:14px;font-family:inherit;background:#fff;color:var(--ink)}
+.field textarea{min-height:88px;resize:vertical;line-height:1.6}
+.hint{font-size:12.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+.empty-state{text-align:center;padding:50px 20px;color:var(--muted)}
+.empty-state .em{font-size:46px;margin-bottom:10px}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;
+  opacity:0;transition:.3s;z-index:200;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="htop">
+      <div class="brand"><span class="logo">🧭</span> 旅遊行程系統</div>
+      <div class="tripsel">
+        <button id="editToggle" onclick="toggleEdit()">🔒 檢視模式</button>
+        <select id="tripSelect" onchange="switchTrip(this.value)"></select>
+        <button class="iconbtn" title="行程管理" onclick="openManage()">⚙️</button>
+      </div>
+    </div>
+    <div class="htitle">
+      <h1 id="hName">—</h1>
+      <div class="sub" id="hSub"></div>
+    </div>
+    <div class="hmeta" id="hMeta"></div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="tabs">
+    <button class="on" data-tab="itin" onclick="setTab('itin')"><span class="em">🗓️</span>行程</button>
+    <button data-tab="food" onclick="setTab('food')"><span class="em">🍽️</span>美食</button>
+    <button data-tab="cost" onclick="setTab('cost')"><span class="em">💰</span>費用</button>
+    <button data-tab="check" onclick="setTab('check')"><span class="em">✅</span>清單</button>
+  </div>
+
+  <div id="view-itin" class="view"></div>
+  <div id="view-food" class="view" style="display:none"></div>
+  <div id="view-cost" class="view" style="display:none"></div>
+  <div id="view-check" class="view" style="display:none"></div>
+</div>
+
+<footer>離線可用 · 資料存在此裝置瀏覽器 · 建議加入主畫面當 App 用</footer>
+
+<!-- Day detail / edit modal -->
+<div class="modal" id="dayModal" onclick="if(event.target===this)closeModal('dayModal')">
+  <div class="sheet"><div id="dayModalBody"></div></div>
+</div>
+<!-- Manage modal -->
+<div class="modal" id="manageModal" onclick="if(event.target===this)closeModal('manageModal')">
+  <div class="sheet"><div id="manageBody"></div></div>
+</div>
+
+<div class="toast" id="toast"></div>
+<input type="file" id="importFile" accept="application/json" style="display:none" onchange="importFile(event)">
+
+<!-- Firebase 雲端同步 SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
+<style>
+  /* 檢視（唯讀）模式：隱藏所有會改到資料的按鈕 */
+  body.ro .iconbtn,
+  body.ro .editbtn,
+  body.ro .fc-edit,
+  body.ro .fc-del,
+  body.ro .del{ display:none !important; }
+  /* 右上角編輯開關 */
+  #editToggle{ cursor:pointer; border:1px solid rgba(255,255,255,.55); background:rgba(255,255,255,.12);
+    color:#fff; font:inherit; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px;
+    white-space:nowrap; }
+  #editToggle:hover{ background:rgba(255,255,255,.22); }
+  #editToggle.editing{ background:#c8622d; border-color:#c8622d; }
+</style>
+
+<script>
+const SEED = {"id": "paris-swiss-2026", "name": "巴黎・瑞士 12 日", "subtitle": "花都與阿爾卑斯山雙城記", "people": 3, "currency": "TWD", "days": [{"date": "2026-09-13", "title": "台北出發 ✈️", "morning": "", "afternoon": "", "evening": "最晚20:00 到機場\nTPE>> CDG ( 巴黎戴高樂機場)\n班機時間:23:55 >> 9/14 07:55", "lodging": "飛機上", "link": "飛機上", "price": 226244, "area": "", "city": "", "stops": [{"name": "桃園國際機場", "q": "Taoyuan International Airport"}]}, {"date": "2026-09-14", "title": "抵達巴黎・拉丁區", "morning": "07:55>> 9:30 機場庶務處理( 海關/ 行李/ 交通接駁時間）\n購買一週交通卡 / Billetterie櫃檯 \n09:30 >> 11:00 到住宿地點放行李 (若無法先寄放就先到Radical Storage寄放行李) 走路5min \n\nPlan A 11:30-13:00 喝咖啡吃點小點心\ncrible.cafe \nSynapse Torréfaction\nPlan B 11:30-13:00 到穆浮塔路市場 (Rue Mouffetard) 步行15min", "afternoon": "13:00-14:30 巴黎植物園>> 塞納河畔散步 步行5min\n14:30- 16:30 回飯店Check in +休息\n\n17:00 - 19:00：穆浮塔路市場 (Rue Mouffetard) 步行15min\n晚餐：Le Vieux Bistrot 餐酒館", "evening": "吃飽飯超市採買食材，回飯店休息", "lodging": "民宿", "link": "https://www.airbnb.com.tw/rooms/1318910881382377118?adults=3&check_in=2026-09-14&check_out=2026-09-16&guests=3&search_mode=regular_search&source_impression_id=p3_1771599039_P3hUotRDvvSmGpRR&previous_page_section_name=1000&federated_search_id=aebcad8a-1639-4940-920c-74ebfaa894ba&modal=PHOTO_TOUR_SCROLLABLE", "price": 27000, "area": "Paris", "city": "巴黎", "stops": [{"name": "CDG 機場", "q": "Charles de Gaulle Airport"}, {"name": "穆浮塔市場", "q": "Rue Mouffetard, Paris"}, {"name": "巴黎植物園", "q": "Jardin des Plantes, Paris"}, {"name": "塞納河畔", "q": "Quai Saint-Bernard, Paris"}, {"name": "Le Vieux Bistrot 晚餐", "q": "Le Vieux Bistrot, Paris"}]}, {"date": "2026-09-15", "title": "羅浮宮・西堤島・鐵塔", "morning": "09:00 - 12:30：羅浮宮 (Musée du Louvre)\n出館後可以到杜樂麗花園以及協和廣場", "afternoon": "13:00 - 14:30：聖徒禮拜堂 (Sainte-Chapelle) 與午餐\n\n重點： 可以羅浮宮區走過橋到西堤島，參觀絕美的 13 世紀彩繪玻璃。\n\n15:00 - 17:00：凱旋門 (Arc de Triomphe) 與香榭麗舍大道\n\n交通： 搭乘地鐵 1 號線直達。\n\n\n17:30 - 19:30：夏樂宮 (Trocadéro) 拍艾菲爾鐵塔全景\n\n交通： 從凱旋門搭乘地鐵 6 號線。", "evening": "晚餐待定\n回飯店休息", "lodging": "", "link": "", "price": null, "area": "Paris", "city": "巴黎", "stops": [{"name": "羅浮宮", "q": "Musée du Louvre, Paris"}, {"name": "杜樂麗花園", "q": "Jardin des Tuileries, Paris"}, {"name": "協和廣場", "q": "Place de la Concorde, Paris"}, {"name": "聖徒禮拜堂", "q": "Sainte-Chapelle, Paris"}, {"name": "凱旋門", "q": "Arc de Triomphe, Paris"}, {"name": "香榭麗舍大道", "q": "Avenue des Champs-Élysées, Paris"}, {"name": "夏樂宮(鐵塔全景)", "q": "Place du Trocadéro, Paris"}]}, {"date": "2026-09-16", "title": "巴黎 → 洛桑（進入瑞士）", "morning": "09:00 出發至里昂車站\n大眾運輸（地鐵）：\n\n從 Saint-Marcel 站 搭乘 地鐵 5 號線（往 Bobigny 方向）。\n\n搭 1 站到 Gare d'Austerlitz。\n\n轉乘： 穿過火車站，走過 Pont d'Austerlitz (奧斯特利茨橋) 跨過塞納河，步行約 10-15 分鐘即可抵達 Gare de Lyon。\n\n約 20-25 分鐘（含步行）。\n\n10:22 里昂>>洛桑 \n路線： Paris Gare de Lyon ➔ Lausanne (洛桑)。\n車程： 約 3 小時 40 分鐘。\n需要提前購買Swiss Travel Pass", "afternoon": "15:00 轉乘： 從洛桑 (Lausanne) 月台直接轉乘前往蒙特勒的區間火車（班次極多，每 15 分鐘一班）。\n車程： 約 20 分鐘。\n\n下車後走路到飯店Check in 步行8分鐘\n\n15:45：沿著湖畔步道往西庸城堡出發（或搭巴士）。\n\n16:00 - 18:00：參觀西庸城堡（最後入場通常在 17:00 左右\n18:30：慢慢散步回市中心，順便拍夕陽下的日內瓦湖。", "evening": "晚餐可以吃乾酪火鍋\n回飯店休息", "lodging": "Marché 28 Guesthouse", "link": "https://www.booking.com/hotel/ch/marche-28-\nguesthouse.zh-tw.html?aid=304142&label=gen173nr-10CAEoggI46AdIMFgEaMkBiAEBmAEzuAEHyAEM2AED6AEB-AEBiAIBqAIBuALT8r_KBsACAdICJDYzMGNhNzVmLWZmZWMtNGJmZC05NGExLTQ0N2RmMzA3NDEwYtgCAeACAQ&sid=8ebfa06d7a82e78b0f423383b00462da&all_sr_blocks=1051644903_378202845_4_0_0&checkin=2026-09-16&checkout=2026-09-17&dest_id=-2553210&dest_type=city&dist=0&group_adults=3&group_children=0&hapos=1&highlighted_blocks=1051644903_378202845_4_0_0&hpos=1&matching_block_id=1051644903_378202845_4_0_0&nflt=review_score%3D90&no_rooms=2&req_adults=3&req_children=0&room1=A&room2=A%2CA&sb_price_type=total&sr_order=popularity&sr_pri_blocks=1051644903_378202845_4_0_0__28980&srepoch=1766851664&srpvid=c8267130ca9e0011&type=total&ucfs=1&#_", "price": 11787, "area": "", "city": "巴黎", "stops": [{"name": "巴黎里昂車站", "q": "Gare de Lyon, Paris"}, {"name": "洛桑車站", "q": "Gare de Lausanne"}, {"name": "Marché 28 Guesthouse", "q": "Marché 28 Guesthouse"}]}, {"date": "2026-09-17", "title": "拉沃葡萄園・西庸城堡", "morning": "第一站：世界遺產拉沃葡萄園 (Lavaux)\n09:30：辦理退房與寄放行李\n\n10:00 - 12:30：葡萄園健行 (Rivaz ➔ St-Saphorin)\n\n交通： 從蒙特勒搭火車到 Rivaz（約 10 分鐘）。\n\n路線： 下車後，沿著指標往 St-Saphorin 方向走。這段路是拉沃的精華，左手邊是結實纍纍的葡萄藤，右手邊是湛藍的日內瓦湖與對岸的阿爾卑斯山。\n\n這段路步行約 40-60 分鐘。St-Saphorin 是一個非常可愛的古老酒莊村落，適合拍照。", "afternoon": "移動前往策馬特 (Zermatt)\n這段路程需要約 2.5 小時，建議搭乘下午兩點左右的班次：\n\n建議班次： 13:41 (或 14:41) 蒙特勒 ➔ Visp ➔ Zermatt\n\n13:41 蒙特勒出發 (IR 90 往 Brig 方向)。\n\n14:52 抵達 Visp (菲斯普)。\n\n15:08 從 Visp 轉乘著名的 MGB (Matterhorn Gotthard Bahn) 登山火車往策馬特。\n\n景點亮點： 從 Visp 到 Zermatt 的這一段窄軌鐵路非常壯觀，火車會沿著深邃的峽谷爬升，建議坐在行進方向的左側，視野較佳。\n\n第三站：抵達策馬特 (Zermatt)\n16:14：抵達策馬特車站\n\n無車小鎮： 策馬特全鎮禁止燃油車，只能步行或搭乘飯店的電動接駁車。\n\n首要任務： 先去飯店 Check-in。如果體力還好，這時可以走到鎮上的 Kirchbrücke (教堂橋)，那是拍攝馬特洪峰「黃金日出」或夕照最經典的位置", "evening": "飯店有桑拿可以泡澡", "lodging": "布里斯都酒店", "link": "https://www.booking.com/hotel/ch/bristol-zermatt.zh-tw.html?label=gen173nr-10CAEoggI46AdIMFgEaMkBiAEBmAEzuAEHyAEM2AED6AEB-AEBiAIBqAIBuALT8r_KBsACAdICJDYzMGNhNzVmLWZmZWMtNGJmZC05NGExLTQ0N2RmMzA3NDEwYtgCAeACAQ&aid=304142&ucfs=1&arphpl=1&checkin=2026-09-17&checkout=2026-09-19&dest_id=-2554901&dest_type=city&group_adults=3&req_adults=3&no_rooms=2&group_children=0&req_children\n=0&hpos=2&hapos=2&sr_order=popularity&nflt=review_score%3D90%3Bfc%3D2&srpvid=17e272e7a3b60ee3&srepoch=1766852613&all_sr_blocks=6880713_364218755_2_1_0_893645%2C6880701_364218755_1_1_0_893645&highlighted_blocks=6880713_364218755_2_1_0_893645%2C6880701_364218755_1_1_0_893645&matching_block_id=6880713_364218755_2_1_0_893645&sr_pri_blocks=6880713_364218755_2_1_0_893645_60550%2C6880701_364218755_1_1_0_893645_39600&from=searchresults", "price": 41138, "area": "Switzerland", "city": "蒙特勒", "stops": [{"name": "Rivaz 車站", "q": "Rivaz, Switzerland"}, {"name": "St-Saphorin", "q": "Saint-Saphorin, Vaud"}, {"name": "蒙特勒", "q": "Montreux"}, {"name": "西庸城堡", "q": "Château de Chillon, Veytaux"}]}, {"date": "2026-09-18", "title": "策馬特・馬特洪峰日出", "morning": "06:45 - 07:15：黃金日出時刻\n\n不用跑遠，穿上厚外套，從飯店走幾步路到河邊的橋上。如果天氣晴朗，可以看到馬特洪峰尖端從灰色轉成閃耀的橘金色。\n\n08:30 - 12:30：高納葛拉特 (Gornergrat) 登山鐵路\n\n搭火車上到 3089 公尺的觀景台。這是全瑞士最經典的視角。\n\n健行推薦： 從 Rotenboden 站 下車，步行 10 分鐘到 Riffelsee 湖。這裡可以拍到馬特洪峰倒映在水中的對稱美景\n13:00 - 15:00：山中餐飲\n\n推薦在 Riffelberg 站附近的景觀餐廳用餐，一邊吃起司鍋一邊看山。\n\n15:30 - 17:30：策馬特老街漫步\n\n回到鎮上，去「Hinterdorfstrasse」看古老的傳統木造糧倉建築（黑漆漆的木頭房子），非常有味道。", "afternoon": "", "evening": "", "lodging": "布里斯都酒店", "link": "", "price": null, "area": "Switzerland", "city": "策馬特", "stops": [{"name": "蒙特勒", "q": "Montreux"}, {"name": "Visp 菲斯普", "q": "Visp, Switzerland"}, {"name": "策馬特車站", "q": "Zermatt train station"}, {"name": "教堂橋 Kirchbrücke", "q": "Kirchbrücke, Zermatt"}, {"name": "高納葛拉特", "q": "Gornergrat"}, {"name": "Riffelsee 湖", "q": "Riffelsee"}]}, {"date": "2026-09-19", "title": "策馬特 → 格林德瓦", "morning": "第一站：享受策馬特的最後一個早晨\n09:00 - 10:30：最後採買或散步\n\n如果您前一天沒逛夠，可以趁早上在策馬特的 Bahnhofstrasse (班霍夫大街) 買些紀念品或巧克力。\n\n11:00：離開飯店前往車站\n\n第二站：鐵道景觀之旅 (Zermatt ➔ Grindelwald)\n大眾運輸約需 3 小時 12 分鐘，需要兩次轉乘：\n\n建議路線：Zermatt ➔ Visp ➔ Interlaken Ost ➔ Grindelwald\n\nZermatt ➔ Visp\n\nVisp ➔ Interlaken Ost： 這段會穿過著名的 Lötschberg 基線隧道。\n\nInterlaken Ost ➔ Grindelwald： 搭乘藍黃相間的伯恩高地鐵路 (BOB)，火車會緩緩駛入山谷，巨大的 艾格峰 (Eiger) 北壁 將會出現在您的正前方，非常震撼！\n\n💡 提醒： 坐在火車右側，進入格林德瓦山谷時視野更佳。\n\n第三站：抵達格林德瓦 (Grindelwald)\n14:30 - 15:00：抵達與 Check-in\n\n15:30 - 17:30：格林德瓦小鎮探索\n\n夢幻山坡健行： 如果還有體力，可以從車站往「夢幻山坡 (Grund)」方向稍微走一段，拍下那些散落在綠色草坡上的小木屋，這是格林德瓦最經典的明信片風景。\n\n18:30：景觀晚餐", "afternoon": "", "evening": "晚餐待定", "lodging": "瑞士麗城優質酒店", "link": "https://www.booking.com/hotel/ch/swissqhotelbelvedere.zh-tw.html?aid=304142&label=gen173nr-10CAEoggI46AdIMFgEaMkBiAEBmAEzuAEHyAEM2AED6AEB-AEBiAIBqAIBuALT8r_KBsACAdICJDYzMGNhNzVmLWZmZWMtNGJmZC05NGExLTQ0N2RmMzA3NDEwYtgCAeACAQ&sid=3d30251dbc2b697ed769b392d3cde56e&all_sr_blocks=6516110_412118711_2_2_0%2C6516110_412118711_2_2_0&checkin=2026-09-20&checkout=2026-09-23&dest_id=65161&dest_type=hotel&dist=0&group_adults=3&group_children=0&hapos=1&highlighted_blocks=6516110_412118711_2_2_0%2C6516110_412118711_2_2_0&hpos=1&matching_block_id=6516110_412118711_2_2_0&no_rooms=2&req_adults=3&req_children=0&room1=A&room2=A%2CA&sb_price_type=total&sr_order=popularity&sr_pri_blocks=6516110_412118711_2_2_0__123720%2C6516110_412118711_2_2_0__122160&srepoch=1766916408&srpvid=6c9647197186128e&type=total&ucfs=1&", "price": 130206, "area": "Switzerland", "city": "格林德瓦", "stops": [{"name": "班霍夫大街", "q": "Bahnhofstrasse, Zermatt"}, {"name": "策馬特車站", "q": "Zermatt train station"}, {"name": "Interlaken Ost", "q": "Interlaken Ost"}, {"name": "格林德瓦車站", "q": "Grindelwald train station"}, {"name": "夢幻山坡 Grund", "q": "Grindelwald Grund"}]}, {"date": "2026-09-20", "title": "少女峰・冰河", "morning": "少女峰：世界遺產與冰河\n08:30 – 09:15 | 交通： 艾格快線纜車 + 齒軌火車 (耗時 41m)。\n\n09:15 – 13:00 | 活動： * 斯芬克斯觀景台： 俯瞰「阿萊奇冰河」（歐洲最長冰河，震撼的萬年冰原）。\n\n冰宮： 走入「冰河內部」隧道，觸摸真正的冰川牆面。\n\n13:00 – 16:45 | 下山： 經小夏戴克轉車 (耗時 1.5h)。\n\n翁根 (Wengen)： 停留散步，平視「勞特布龍嫩」懸崖山谷絕景。", "afternoon": "", "evening": "", "lodging": "瑞士麗城優質酒店", "link": "", "price": null, "area": "Grindelwald Switzerland", "city": "格林德瓦", "stops": [{"name": "格林德瓦纜車站", "q": "Grindelwald Terminal"}, {"name": "少女峰", "q": "Jungfraujoch"}, {"name": "小夏戴克", "q": "Kleine Scheidegg"}, {"name": "翁根 Wengen", "q": "Wengen, Switzerland"}]}, {"date": "2026-09-21", "title": "First 山・Bachalpsee", "morning": "First 山：冒險與湖泊倒影\n09:00 – 09:25 | 交通： First 纜車 (耗時 25m)。\n\n09:30 – 13:00 | 活動：\n\n懸崖步道： 貼著峭壁的鏤空步道，體驗 360 度阿爾卑斯山平視視野。\n\nBachalpsee 湖健行： (往返 2h)。看艾格峰完美倒映在「藍寶石湖泊」中。\n\n13:30 – 15:00 | 下山： * 冒險設施： 挑戰「山景卡丁車」或「飛索」，享受在群山間滑行的刺激感。", "afternoon": "", "evening": "", "lodging": "瑞士麗城優質酒店", "link": "", "price": null, "area": "Grindelwald Switzerland", "city": "格林德瓦", "stops": [{"name": "First 纜車站", "q": "Firstbahn Grindelwald"}, {"name": "First 山頂", "q": "First, Grindelwald"}, {"name": "Bachalpsee 湖", "q": "Bachalpsee"}]}, {"date": "2026-09-22", "title": "勞特布龍嫩 → 返回巴黎", "morning": "上午： 退房後行李寄放車站，搭車前往 Lauterbrunnen（勞特布龍嫩）。步行看 Staubbach Falls（施陶河瀑布），感受 70 層樓高的水氣。\n\n下午： 約 13:00 左右從 Grindelwald 出發離開。\n\n目收集最後一個風景—— U 型山谷的童話感，隨後在跨國火車上整理旅途照片。\n\n活動： 在 Interlaken 轉車時，可以順手在車站買些瑞士巧克力當伴手禮。\n\n交通指南： 1. Grindelwald → Interlaken Ost → Basel SBB (約 2.5 小時) 2. Basel SBB → Paris Gare de Lyon (TGV Lyria 直達，約 3 小時 4 分鐘)\n\n建議預訂 16:34 或 17:34 左右從 Basel 出發的 TGV，約晚上 20:30 左右回到巴黎市區。", "afternoon": "", "evening": "", "lodging": "Pepper & Paper Apartments", "link": "https://www.booking.com/hotel/ch/swissqhotelbelvedere.zh-tw.html?aid=304142&label=gen173nr-10CAEoggI46AdIMFgEaMkBiAEBmAEzuAEHyAEM2AED6AEB-AEBiAIBqAIBuALT8r_KBsACAdICJDYzMGNhNzVmLWZmZWMtNGJmZC05NGExLTQ0N2RmMzA3NDEwYtgCAeACAQ&sid=3d30251dbc2b697ed769b392d3cde56e&all_sr_blocks=6516110_412118711_2_2_0%2C6516110_412118711_2_2_0&checkin=2026-09-20&checkout=2026-09-23&dest_id=65161&dest_type=hotel&dist=0&group_adults=3&group_children=0&hapos=1&highlighted_blocks=6516110_412118711_2_2_0%2C6516110_412118711_2_2_0&hpos=1&matching_block_id=6516110_412118711_2_2_0&no_rooms=2&req_adults=3&req_children=0&room1=A&room2=A%2CA&sb_price_type=total&sr_order=popularity&sr_pri_blocks=6516110_412118711_2_2_0__123720%2C6516110_412118711_2_2_0__122160&srepoch=1766916408&srpvid=6c9647197186128e&type=total&ucfs=1&", "price": 16113, "area": "", "city": "巴黎", "stops": [{"name": "勞特布龍嫩", "q": "Lauterbrunnen"}, {"name": "施陶河瀑布", "q": "Staubbach Fall, Lauterbrunnen"}, {"name": "Interlaken Ost", "q": "Interlaken Ost"}, {"name": "Basel SBB", "q": "Basel SBB"}, {"name": "巴黎里昂車站", "q": "Gare de Lyon, Paris"}]}, {"date": "2026-09-23", "title": "巴黎 → 返程 ✈️", "morning": "早上11:00 班機 \n巴黎市區>> CDG戴高樂機場", "afternoon": "", "evening": "", "lodging": "", "link": "", "price": null, "area": "Paris", "city": "巴黎", "stops": [{"name": "巴黎市區", "q": "Paris"}, {"name": "CDG 戴高樂機場", "q": "Charles de Gaulle Airport"}]}, {"date": "2026-09-24", "title": "返抵台北 🏠", "morning": "", "afternoon": "", "evening": "", "lodging": "", "link": "", "price": null, "area": "", "city": "", "stops": []}], "todos": [{"text": "購買 Swiss Travel Pass", "done": false}, {"text": "羅浮宮線上預約門票", "done": false}, {"text": "巴黎一週交通卡", "done": false}, {"text": "西庸城堡門票", "done": false}, {"text": "高納葛拉特登山鐵路車票", "done": false}, {"text": "少女峰／艾格快線票券", "done": false}, {"text": "護照效期＆申根資料確認", "done": false}, {"text": "換歐元現金", "done": false}, {"text": "旅遊平安險", "done": false}, {"text": "eSIM／國際漫遊", "done": false}], "packing": [{"text": "護照＋影本", "done": false}, {"text": "歐元現金／信用卡", "done": false}, {"text": "歐規轉接插頭", "done": false}, {"text": "高山厚外套", "done": false}, {"text": "健行鞋", "done": false}, {"text": "太陽眼鏡＆防曬", "done": false}, {"text": "常備藥品", "done": false}, {"text": "行動電源", "done": false}, {"text": "相機／記憶卡", "done": false}, {"text": "保暖帽＆手套", "done": false}], "food": [{"id": "f0", "name": "Le Vieux Bistrot", "area": "巴黎", "cat": "🍽️ 法式餐酒館", "note": "拉丁區經典 bistro，你們第一晚的晚餐", "q": "Le Vieux Bistrot, Paris", "rating": 4.2, "price": "€€"}, {"id": "f1", "name": "Crible Café", "area": "巴黎", "cat": "☕ 咖啡", "note": "抵達日的咖啡小點，質感好、氣氛佳", "q": "Crible Café, Paris", "rating": 4.5, "price": "€"}, {"id": "f2", "name": "穆浮塔市場 Rue Mouffetard", "area": "巴黎", "cat": "🥖 在地市集", "note": "買熟食、乳酪、可麗餅邊走邊吃", "q": "Rue Mouffetard, Paris", "rating": 4.5, "price": "€"}, {"id": "f3", "name": "Berthillon", "area": "巴黎", "cat": "🍦 冰淇淋", "note": "西堤島百年名店，逛聖徒禮拜堂順路", "q": "Berthillon, Île Saint-Louis, Paris", "rating": 4.4, "price": "€"}, {"id": "f4", "name": "Breizh Café", "area": "巴黎", "cat": "🥞 可麗餅", "note": "鹹可麗餅 galette，巴黎最有名之一", "q": "Breizh Café Marais, Paris", "rating": 4.4, "price": "€€"}, {"id": "f5", "name": "Du Pain et des Idées", "area": "巴黎", "cat": "🥐 麵包", "note": "傳說級可頌與麵包店，早餐必買", "q": "Du Pain et des Idées, Paris", "rating": 4.6, "price": "€"}, {"id": "f6", "name": "L'As du Fallafel", "area": "巴黎", "cat": "🥙 中東小吃", "note": "瑪黑區排隊法拉費，份量大又便宜", "q": "L'As du Fallafel, Paris", "rating": 4.3, "price": "€"}, {"id": "f7", "name": "Auberge de l'Onde", "area": "蒙特勒", "cat": "🍷 酒莊餐廳", "note": "St-Saphorin 葡萄園村落，配拉沃白酒", "q": "Auberge de l'Onde, Saint-Saphorin", "rating": 4.5, "price": "€€€"}, {"id": "f8", "name": "蒙特勒湖畔餐廳", "area": "蒙特勒", "cat": "🌅 湖景", "note": "日內瓦湖畔散步順便用餐，看夕陽", "q": "restaurant lakefront Montreux", "rating": 4.2, "price": "€€"}, {"id": "f9", "name": "瑞士起司火鍋（蒙特勒）", "area": "蒙特勒", "cat": "🧀 火鍋", "note": "進瑞士第一頓，來鍋道地 fondue", "q": "cheese fondue restaurant Montreux", "rating": 4.3, "price": "€€"}, {"id": "f10", "name": "Whymper-Stube", "area": "策馬特", "cat": "🧀 起司火鍋", "note": "策馬特最有名的 fondue／raclette", "q": "Whymper-Stube, Zermatt", "rating": 4.5, "price": "€€€"}, {"id": "f11", "name": "Chez Vrony", "area": "策馬特", "cat": "🏔️ 山景餐廳", "note": "Findeln 山上景觀餐廳，看馬特洪峰配餐", "q": "Chez Vrony, Zermatt", "rating": 4.6, "price": "€€€"}, {"id": "f12", "name": "Riffelberg 景觀餐廳", "area": "策馬特", "cat": "🏔️ 山景", "note": "高納葛拉特線上，邊吃起司鍋邊看山", "q": "Riffelberg restaurant, Zermatt", "rating": 4.2, "price": "€€"}, {"id": "f13", "name": "Bahnhofstrasse 巧克力", "area": "策馬特", "cat": "🍫 甜點伴手", "note": "班霍夫大街買瑞士巧克力當伴手禮", "q": "Bahnhofstrasse, Zermatt", "rating": 4.5, "price": "€€"}, {"id": "f14", "name": "Berggasthaus First", "area": "格林德瓦", "cat": "🏔️ 山頂餐廳", "note": "First 山頂，360 度阿爾卑斯景觀用餐", "q": "Berggasthaus First, Grindelwald", "rating": 4.1, "price": "€€"}, {"id": "f15", "name": "格林德瓦起司鍋", "area": "格林德瓦", "cat": "🧀 火鍋", "note": "小鎮上的傳統瑞士料理", "q": "fondue restaurant Grindelwald", "rating": 4.3, "price": "€€"}, {"id": "f16", "name": "C und M Café", "area": "格林德瓦", "cat": "☕ 咖啡輕食", "note": "鎮中心露台正對艾格峰", "q": "C und M Café, Grindelwald", "rating": 4.4, "price": "€€"}, {"id": "f17", "name": "Lauterbrunnen 餐廳", "area": "格林德瓦", "cat": "🥔 在地", "note": "瀑布村用餐，試試瑞士煎餅 rösti", "q": "restaurant Lauterbrunnen", "rating": 4.2, "price": "€€"}], "stays": {"巴黎": {"name": "巴黎民宿（拉丁區）", "q": "Saint-Marcel, Paris"}, "蒙特勒": {"name": "蒙特勒住宿", "q": "Montreux"}, "策馬特": {"name": "布里斯都酒店", "q": "Hotel Bristol, Zermatt"}, "格林德瓦": {"name": "瑞士麗城優質酒店", "q": "Belvedere Swiss Quality Hotel, Grindelwald"}}};
+const KEY='travel_system_v1';
+let DB, activeId, foodFilter=null;
+
+/* ========== Firebase 雲端同步 ========== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCbc-tdVHQluosevNkfC5u3UE0GnCaYJOY",
+  authDomain: "travel-itinerary-fef51.firebaseapp.com",
+  databaseURL: "https://travel-itinerary-fef51-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "travel-itinerary-fef51",
+  storageBucket: "travel-itinerary-fef51.firebasestorage.app",
+  messagingSenderId: "233523740212",
+  appId: "1:233523740212:web:e62555c7d13b4cd5579461",
+  measurementId: "G-1X8YS30P17"
+};
+const EDIT_PASS = 'albert2026';   // ← 編輯密碼（只有你知道；要換就改這裡）
+let EDIT = false;                 // 目前是否為編輯模式
+let _booting = true;              // 啟動階段：暫不寫雲端
+let _localEcho = false;           // 自己剛寫入，忽略下一次雲端回呼
+let STATE_REF = null;
+
+function initFirebase(){
+  try{
+    firebase.initializeApp(firebaseConfig);
+    STATE_REF = firebase.database().ref('state');
+    return true;
+  }catch(e){ console.error('Firebase 初始化失敗', e); return false; }
+}
+
+// 接收雲端變動 → 即時更新畫面（別人看最新的關鍵）
+function startSync(){
+  if(!STATE_REF) return;
+  STATE_REF.on('value', snap=>{
+    if(_localEcho){ _localEcho=false; return; }   // 忽略自己剛存的那次
+    const remote = snap.val();
+    if(remote && remote.trips && remote.trips.length){
+      DB = remote;
+      activeId = DB.activeId && DB.trips.some(t=>t.id===DB.activeId) ? DB.activeId : DB.trips[0].id;
+      _booting=true; migrate(); _booting=false;
+      try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
+      renderAll();
+    } else if(EDIT){
+      pushToCloud();   // 雲端還是空的、而我是編輯者 → 把目前內容當初始版上傳
+    }
+  }, err=>{ toast('雲端連線失敗：'+((err&&err.code)||'')); });
+}
+
+// 把目前內容寫上雲端
+function pushToCloud(){
+  if(!STATE_REF) return;
+  _localEcho = true;
+  STATE_REF.set(DB).catch(err=>{ _localEcho=false; toast('雲端儲存失敗：'+((err&&err.code)||'')); });
+}
+
+// 切換檢視 / 編輯模式
+function setEdit(on){
+  EDIT = on;
+  document.body.classList.toggle('ro', !on);
+  const b = document.getElementById('editToggle');
+  if(b){ b.textContent = on ? '✏️ 編輯中（點此結束）' : '🔒 檢視模式'; b.classList.toggle('editing', on); }
+}
+function toggleEdit(){
+  if(EDIT){ setEdit(false); toast('已切回檢視模式'); return; }
+  const p = prompt('請輸入編輯密碼：');
+  if(p===null) return;
+  if(p===EDIT_PASS){
+    setEdit(true); toast('已進入編輯模式，改動會即時同步給大家 ✨');
+    if(STATE_REF) STATE_REF.once('value').then(s=>{ if(!s.val()) pushToCloud(); });
+  } else { toast('密碼不對 🔒'); }
+}
+// 城市概略座標，用於「找我附近的美食」定位（緯度, 經度）
+const AREAS={'巴黎':[48.8566,2.3522],'蒙特勒':[46.4312,6.9107],'策馬特':[46.0207,7.7491],'格林德瓦':[46.6242,8.0342]};
+
+/* ---------- storage ---------- */
+function load(){
+  try{ DB=JSON.parse(localStorage.getItem(KEY)); }catch(e){ DB=null; }
+  if(!DB || !DB.trips || !DB.trips.length){
+    DB={trips:[deepcopy(SEED)], activeId:SEED.id};
+  }
+  activeId = DB.activeId && DB.trips.some(t=>t.id===DB.activeId) ? DB.activeId : DB.trips[0].id;
+  migrate();
+}
+/* 相容舊資料：補上 stops/area 欄位，並把種子行程尚未設定的站點回填 */
+function migrate(){
+  let changed=false;
+  DB.trips.forEach(t=>{
+    if(!('food'in t)){ t.food=[]; changed=true; }
+    if(!('stays'in t)){ t.stays={}; changed=true; }
+    (t.food||[]).forEach(f=>{
+      if(!('rating'in f)){ f.rating=null; changed=true; }
+      if(!('price'in f)){ f.price=''; changed=true; }
+    });
+    t.days.forEach(d=>{
+      if(!('stops'in d)){ d.stops=[]; changed=true; }
+      if(!('area'in d)){ d.area=''; changed=true; }
+      if(!('city'in d)){ d.city=''; changed=true; }
+    });
+  });
+  const st=DB.trips.find(t=>t.id===SEED.id);
+  if(st){
+    st.days.forEach(d=>{
+      const sd=SEED.days.find(x=>x.date===d.date); if(!sd)return;
+      if(!d.stops||!d.stops.length){ if(sd.stops&&sd.stops.length){ d.stops=deepcopy(sd.stops); changed=true; } }
+      if(!d.area && sd.area){ d.area=sd.area; changed=true; }
+      if(!d.city && sd.city){ d.city=sd.city; changed=true; }
+    });
+    if((!st.food||!st.food.length) && SEED.food && SEED.food.length){ st.food=deepcopy(SEED.food); changed=true; }
+    // 回填既有美食的參考評分/價位（依 id 或店名對應種子）
+    (st.food||[]).forEach(f=>{
+      if(f.rating==null || !f.price){
+        const sf=(SEED.food||[]).find(x=>x.id===f.id||x.name===f.name);
+        if(sf){ if(f.rating==null && sf.rating!=null){f.rating=sf.rating;changed=true;}
+                if(!f.price && sf.price){f.price=sf.price;changed=true;} }
+      }
+    });
+    if((!st.stays||!Object.keys(st.stays).length) && SEED.stays && Object.keys(SEED.stays).length){
+      st.stays=deepcopy(SEED.stays); changed=true;
+    }
+  }
+  if(changed)save();
+}
+function save(){
+  DB.activeId=activeId;
+  try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
+  if(EDIT && !_booting) pushToCloud();   // 只有編輯者、且非啟動階段，才寫上雲端
+}
+function deepcopy(o){ return JSON.parse(JSON.stringify(o)); }
+function trip(){ return DB.trips.find(t=>t.id===activeId); }
+
+/* ---------- helpers ---------- */
+const WD=['日','一','二','三','四','五','六'];
+function fmtDate(s){ const d=new Date(s+'T00:00:00'); return (d.getMonth()+1)+'/'+d.getDate()+' (週'+WD[d.getDay()]+')'; }
+function money(n){ return n==null?'—':n.toLocaleString('en-US'); }
+function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function linkify(s){
+  return esc(s).replace(/(https?:\/\/[^\s]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+}
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),1800); }
+function closeModal(id){ document.getElementById(id).classList.remove('on'); }
+function slug(){ return 'trip-'+Math.abs(Date.now()).toString(36)+'-'+(DB.trips.length+1); }
+
+/* ---------- header + trip select ---------- */
+function renderHeader(){
+  const t=trip();
+  document.getElementById('hName').textContent=t.name;
+  document.getElementById('hSub').textContent=t.subtitle||'';
+  const dr = t.days.length ? fmtDate(t.days[0].date)+' – '+fmtDate(t.days[t.days.length-1].date) : '';
+  const total = t.days.reduce((a,d)=>a+(d.price||0),0);
+  document.getElementById('hMeta').innerHTML=
+    `<span class="chip">📆 ${t.days.length} 天</span>`+
+    `<span class="chip">👥 ${t.people} 人</span>`+
+    `<span class="chip">🧾 ${t.currency} ${money(total)}</span>`+
+    (dr?`<span class="chip">🗺️ ${dr}</span>`:'');
+  const sel=document.getElementById('tripSelect');
+  sel.innerHTML=DB.trips.map(x=>`<option value="${x.id}" ${x.id===activeId?'selected':''}>${esc(x.name)}</option>`).join('');
+}
+
+/* ---------- itinerary ---------- */
+function renderItin(){
+  const t=trip(); const v=document.getElementById('view-itin');
+  if(!t.days.length){ v.innerHTML=emptyState('🗓️','還沒有行程','到 ⚙️ 行程管理新增日期，或編輯這趟行程'); return; }
+  v.innerHTML='<div class="grid">'+t.days.map((d,i)=>dayCard(d,i)).join('')+'</div>';
+}
+function slot(cls,tag,txt){
+  const empty = !txt.trim();
+  return `<div class="slot ${cls} ${empty?'empty':''}"><span class="tag">${tag}</span>`+
+    `<span class="txt">${empty?'—':esc(txt.split('\n')[0])}</span></div>`;
+}
+function dayCard(d,i){
+  const price = d.price!=null ? `<span class="dc-price">$${money(d.price)}</span>`:'<span class="dc-price" style="color:var(--muted);font-weight:600">—</span>';
+  return `<div class="daycard" onclick="openDay(${i})">
+    <div class="dc-top">
+      <span class="dc-daynum">Day ${i+1}</span>
+      <div class="dc-date">${fmtDate(d.date)}</div>
+      <div class="dc-title">${esc(d.title||'行程')}</div>
+    </div>
+    <div class="dc-body">
+      ${slot('am','上午',d.morning)}
+      ${slot('pm','下午',d.afternoon)}
+      ${slot('ev','晚上',d.evening)}
+    </div>
+    <div class="dc-foot">
+      <span class="dc-lodge">${d.lodging?('🏨 '+esc(d.lodging)):'<span style=\"opacity:.5\">無住宿</span>'}</span>
+      ${price}
+    </div>
+  </div>`;
+}
+function mapsUrl(a,b,mode){
+  return 'https://www.google.com/maps/dir/?api=1&origin='+encodeURIComponent(a)+
+    '&destination='+encodeURIComponent(b)+'&travelmode='+mode;
+}
+function mapsSearch(q){ return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q); }
+
+/* ---------- food ---------- */
+function haversine(la1,lo1,la2,lo2){
+  const R=6371,r=x=>x*Math.PI/180,dla=r(la2-la1),dlo=r(lo2-lo1);
+  const h=Math.sin(dla/2)**2+Math.cos(r(la1))*Math.cos(r(la2))*Math.sin(dlo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+function setFoodFilter(c){ foodFilter=c; renderFood(); }
+function renderFood(){
+  const t=trip(); const v=document.getElementById('view-food'); const food=t.food||[];
+  const cities=[...new Set(food.map(f=>f.area).filter(Boolean))];
+  if(!food.length){ v.innerHTML=emptyState('🍽️','還沒有推薦美食','用下方表單新增，或到 ⚙️ 匯入'); return; }
+  const chips=`<button class="chip2 ${foodFilter==null?'on':''}" onclick="setFoodFilter(null)">全部</button>`+
+    cities.map(c=>`<button class="chip2 ${foodFilter===c?'on':''}" onclick="setFoodFilter('${c}')">${esc(c)}</button>`).join('');
+  const shown = foodFilter? food.filter(f=>f.area===foodFilter): food;
+  const groups={};
+  shown.forEach(f=>{ const k=f.area||'其他'; (groups[k]=groups[k]||[]).push(f); });
+  const body=Object.keys(groups).map(k=>`<div class="food-group">
+      <div class="gh">📍 ${esc(k)}</div>${groups[k].map(foodCard).join('')}</div>`).join('')
+      || '<div class="hint">這個城市還沒有推薦，換一個或按「全部」。</div>';
+  const cityOpts=cities.map(c=>`<option value="${esc(c)}">`).join('');
+  const stays=t.stays||{};
+  const stayText=Object.keys(stays).map(c=>`${c} | ${stays[c].name||''} | ${stays[c].q||''}`).join('\n');
+  v.innerHTML=`
+    <div class="food-hd">
+      <button class="locbtn" onclick="locateFood()">📍 找我附近的</button>${chips}
+    </div>
+    ${body}
+    <div class="card">
+      <h3 style="margin:0 0 6px;font-size:16px">🏨 各城市住宿（走路起點）</h3>
+      <div class="field"><textarea id="stayEditor" style="min-height:100px">${esc(stayText)}</textarea>
+        <div class="hint">一行一個城市：<b>城市 | 住宿名 | Google查詢字</b>。「🚶 從住宿走去」會用這裡當步行起點。</div></div>
+      <button class="btn" onclick="saveStays()">儲存住宿</button>
+    </div>
+    <div class="card">
+      <h3 style="margin:0 0 10px;font-size:16px">➕ 新增推薦美食</h3>
+      <div class="field"><label>店名</label><input id="nf_name" placeholder="例：Whymper-Stube"></div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>城市</label><input id="nf_area" list="nf_cities" placeholder="例：策馬特"><datalist id="nf_cities">${cityOpts}</datalist></div>
+        <div class="field" style="flex:1"><label>分類</label><input id="nf_cat" placeholder="例：🧀 火鍋"></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>評分（0–5，可空）</label><input id="nf_rating" type="number" step="0.1" min="0" max="5" placeholder="例：4.5"></div>
+        <div class="field" style="flex:1"><label>價位（可空）</label><input id="nf_price" placeholder="例：€€"></div>
+      </div>
+      <div class="field"><label>推薦原因（可空）</label><input id="nf_note" placeholder="例：全鎮最有名的起司鍋"></div>
+      <div class="field"><label>Google 查詢字（可空，預設用店名）</label><input id="nf_q" placeholder="例：Whymper-Stube, Zermatt"></div>
+      <button class="btn" onclick="addFood()">加入清單</button>
+    </div>
+    <div class="hint">⭐ 評分為<b>參考值</b>（非即時），可點 ✏️ 自行更新；點「📍 Google 地圖」看最新真實評分。<br>「📍 找我附近的」需允許定位權限，用手機在當地開最準。</div>`;
+}
+function foodMeta(f){
+  const p=[];
+  if(f.rating!=null && f.rating!=='') p.push(`<span class="star">⭐ ${f.rating}</span>`);
+  if(f.price) p.push(`<span class="prc">${esc(f.price)}</span>`);
+  return p.length?`<div class="fc-meta">${p.join('')}</div>`:'';
+}
+function walkUrlFor(f){
+  const s=(trip().stays||{})[f.area];
+  return (s&&s.q)? mapsUrl(s.q, f.q||f.name, 'walking') : null;
+}
+function foodCard(f){
+  const w=walkUrlFor(f);
+  return `<div class="foodcard">
+    <div class="fc-cat">${esc(f.cat||'🍽️ 美食')}</div>
+    <div class="fc-main">
+      <div class="fc-name">${esc(f.name)}</div>
+      ${foodMeta(f)}
+      ${f.note?`<div class="fc-note">${esc(f.note)}</div>`:''}
+      <div class="fc-actions">
+        <a class="navb tran" href="${mapsSearch(f.q||f.name)}" target="_blank" rel="noopener">📍 Google 地圖</a>
+        ${w?`<a class="navb walk2" href="${w}" target="_blank" rel="noopener">🚶 從住宿走去</a>`:''}
+        <button class="fc-edit" onclick="editFood('${f.id}')">✏️</button>
+        <button class="fc-del" onclick="delFood('${f.id}')">🗑</button>
+      </div>
+    </div></div>`;
+}
+function editFood(id){
+  const f=(trip().food||[]).find(x=>x.id===id); if(!f)return;
+  const cities=[...new Set((trip().food||[]).map(x=>x.area).filter(Boolean))];
+  document.getElementById('dayModalBody').innerHTML=`
+    <div class="sheet-hd"><button class="close" onclick="closeModal('dayModal')">×</button>
+      <div class="d">編輯美食</div><h2>${esc(f.name)}</h2></div>
+    <div class="sheet-bd">
+      <div class="field"><label>店名</label><input id="ef_name" value="${esc(f.name)}"></div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>城市</label><input id="ef_area" list="ef_cities" value="${esc(f.area||'')}"><datalist id="ef_cities">${cities.map(c=>`<option value="${esc(c)}">`).join('')}</datalist></div>
+        <div class="field" style="flex:1"><label>分類</label><input id="ef_cat" value="${esc(f.cat||'')}"></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>評分（0–5）</label><input id="ef_rating" type="number" step="0.1" min="0" max="5" value="${f.rating!=null?f.rating:''}"></div>
+        <div class="field" style="flex:1"><label>價位</label><input id="ef_price" value="${esc(f.price||'')}" placeholder="€ / €€ / €€€"></div>
+      </div>
+      <div class="field"><label>推薦原因</label><input id="ef_note" value="${esc(f.note||'')}"></div>
+      <div class="field"><label>Google 查詢字</label><input id="ef_q" value="${esc(f.q||'')}"></div>
+      <div class="btn-row">
+        <button class="btn" onclick="saveFood('${id}')">儲存</button>
+        <button class="btn ghost" onclick="closeModal('dayModal')">取消</button>
+      </div>
+    </div>`;
+  document.getElementById('dayModal').classList.add('on');
+}
+function saveFood(id){
+  const f=(trip().food||[]).find(x=>x.id===id); if(!f)return;
+  f.name=val('ef_name'); f.area=val('ef_area'); f.cat=val('ef_cat')||'🍽️ 美食';
+  const rt=val('ef_rating'); f.rating = rt===''?null:Number(rt);
+  f.price=val('ef_price'); f.note=val('ef_note'); f.q=val('ef_q')||f.name;
+  save(); closeModal('dayModal'); renderFood(); toast('已儲存');
+}
+function saveStays(){
+  const t=trip(); const map={};
+  val('stayEditor').split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{
+    const p=l.split('|').map(s=>s.trim());
+    if(p[0]) map[p[0]]={name:p[1]||'', q:p[2]||p[1]||''};
+  });
+  t.stays=map; save(); renderFood(); renderItin(); toast('住宿已更新');
+}
+function locateFood(){
+  if(!navigator.geolocation){ toast('此裝置不支援定位'); return; }
+  toast('定位中…');
+  navigator.geolocation.getCurrentPosition(p=>{
+    const la=p.coords.latitude, lo=p.coords.longitude;
+    let best=null,bd=Infinity;
+    for(const c in AREAS){ const d=haversine(la,lo,AREAS[c][0],AREAS[c][1]); if(d<bd){bd=d;best=c;} }
+    if(best && (trip().food||[]).some(f=>f.area===best)){
+      foodFilter=best; setTab('food'); renderFood();
+      toast('已定位：'+best+'（約 '+Math.round(bd)+' km）');
+    } else { toast('附近沒有對應的美食清單'); }
+  }, e=>{ toast(e.code===1?'請允許定位權限':'定位失敗，訊號不足'); }, {timeout:8000, maximumAge:60000});
+}
+function addFood(){
+  const name=val('nf_name'); if(!name){ toast('請輸入店名'); return; }
+  const t=trip(); if(!t.food)t.food=[];
+  const rt=val('nf_rating');
+  t.food.push({id:'f'+Date.now().toString(36)+Math.floor(Math.random()*1e4),
+    name:name, area:val('nf_area'), cat:val('nf_cat')||'🍽️ 美食',
+    rating: rt===''?null:Number(rt), price:val('nf_price'),
+    note:val('nf_note'), q:val('nf_q')||name});
+  save(); renderFood(); toast('已加入：'+name);
+}
+function delFood(id){
+  const t=trip(); t.food=(t.food||[]).filter(f=>f.id!==id); save(); renderFood();
+}
+function foodSection(d){
+  const city=d.city; if(!city) return '';
+  const items=(trip().food||[]).filter(f=>f.area===city);
+  if(!items.length) return '';
+  const mini=items.map(f=>{
+    const w=walkUrlFor(f);
+    const meta=[]; if(f.rating!=null&&f.rating!=='')meta.push('⭐ '+f.rating); if(f.price)meta.push(f.price);
+    return `<div class="foodmini">
+      <span class="fm-cat">${esc((f.cat||'🍽️').trim().split(' ')[0])}</span>
+      <div class="fm-body"><div class="fm-name">${esc(f.name)}</div>
+        ${meta.length?`<div class="fm-meta">${esc(meta.join(' · '))}</div>`:''}
+        ${f.note?`<div class="fm-note">${esc(f.note)}</div>`:''}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex:none">
+        <a class="navb tran fm-btn" href="${mapsSearch(f.q||f.name)}" target="_blank" rel="noopener">📍 地圖</a>
+        ${w?`<a class="navb walk2 fm-btn" href="${w}" target="_blank" rel="noopener">🚶 住宿</a>`:''}
+      </div>
+    </div>`;
+  }).join('');
+  return `<div class="routewrap"><h3>🍽️ ${esc(city)}・推薦美食</h3>
+    <div class="note">⭐ 為參考評分 · 點「📍 地圖」看即時資訊、「🚶 住宿」算步行時間</div>${mini}</div>`;
+}
+function routeSection(d){
+  const s=d.stops||[];
+  let inner;
+  if(!s.length){ inner='<div class="empty">這天還沒設定站點，點下方「✏️ 編輯這天」新增。</div>'; }
+  else{
+    inner=s.map((st,i)=>{
+      let h=`<div class="stop"><span class="dot">${i+1}</span><span class="nm">${esc(st.name)}</span></div>`;
+      if(i<s.length-1){
+        const a=st.q||st.name, b=s[i+1].q||s[i+1].name;
+        h+=`<div class="seg">
+          <a class="navb walk" href="${mapsUrl(a,b,'walking')}" target="_blank" rel="noopener">🚶 步行</a>
+          <a class="navb tran" href="${mapsUrl(a,b,'transit')}" target="_blank" rel="noopener">🚇 大眾運輸</a>
+        </div>`;
+      }
+      return h;
+    }).join('');
+  }
+  return `<div class="routewrap"><h3>🧭 路線導航</h3>
+    <div class="note">點按鈕開 Google 地圖，即時顯示時間與距離</div>
+    <div class="route">${inner}</div></div>`;
+}
+function openDay(i){
+  const d=trip().days[i];
+  const tl=[['am','上午',d.morning],['pm','下午',d.afternoon],['ev','晚上',d.evening]]
+    .map(([c,l,txt])=> txt.trim()? `<div class="tlrow ${c}"><div class="lab"><span class="b">${l}</span></div>`+
+      `<div class="content">${linkify(txt)}</div></div>`:'').join('') || '<div class="hint">這天還沒有安排行程。</div>';
+  const info = `<div class="info-row">
+      <div class="info-box"><div class="k">🏨 住宿</div><div class="v">${d.lodging?esc(d.lodging):'—'}</div>
+        ${d.link?`<a class="linkbtn" href="${esc(d.link)}" target="_blank" rel="noopener">🔗 開啟訂房連結</a>`:''}</div>
+      <div class="info-box"><div class="k">🧾 當日花費</div><div class="v" style="color:var(--accent)">${d.price!=null?trip().currency+' '+money(d.price):'—'}</div></div>
+    </div>`;
+  document.getElementById('dayModalBody').innerHTML=`
+    <div class="sheet-hd">
+      <button class="close" onclick="closeModal('dayModal')">×</button>
+      <div class="d">Day ${i+1} · ${fmtDate(d.date)}</div>
+      <h2>${esc(d.title||'行程')}</h2>
+    </div>
+    <div class="sheet-bd">
+      <div class="tl">${tl}</div>
+      ${info}
+      ${routeSection(d)}
+      ${foodSection(d)}
+      <div class="btn-row"><button class="editbtn" onclick="editDay(${i})">✏️ 編輯這天</button></div>
+    </div>`;
+  document.getElementById('dayModal').classList.add('on');
+}
+function editDay(i){
+  const d=trip().days[i];
+  document.getElementById('dayModalBody').innerHTML=`
+    <div class="sheet-hd"><button class="close" onclick="openDay(${i})">×</button>
+      <div class="d">編輯 Day ${i+1} · ${fmtDate(d.date)}</div><h2>編輯行程</h2></div>
+    <div class="sheet-bd">
+      <div class="field"><label>主題標題</label><input id="e_title" value="${esc(d.title||'')}"></div>
+      <div class="field"><label>上午</label><textarea id="e_m">${esc(d.morning)}</textarea></div>
+      <div class="field"><label>下午</label><textarea id="e_a">${esc(d.afternoon)}</textarea></div>
+      <div class="field"><label>晚上</label><textarea id="e_e">${esc(d.evening)}</textarea></div>
+      <div class="field"><label>住宿地點</label><input id="e_lodge" value="${esc(d.lodging)}"></div>
+      <div class="field"><label>訂房／參考連結</label><input id="e_link" value="${esc(d.link)}" placeholder="https://..."></div>
+      <div class="field"><label>當日花費（${trip().currency}）</label><input id="e_price" type="number" value="${d.price!=null?d.price:''}" placeholder="留空代表無"></div>
+      <div class="field"><label>導航站點（一行一站，依順序）</label>
+        <textarea id="e_stops" style="min-height:130px">${esc((d.stops||[]).map(s=> s.name===s.q ? s.name : s.name+' | '+s.q).join('\n'))}</textarea>
+        <div class="hint">一行一個景點，Google 地圖會依這個順序算路線。<br>想指定精確地點可寫「<b>顯示名 | Google查詢字</b>」，例：<code>羅浮宮 | Musée du Louvre, Paris</code>。只寫顯示名也可以。</div></div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>地區（導航查詢用）</label><input id="e_area" value="${esc(d.area||'')}" placeholder="例：Paris"></div>
+        <div class="field" style="flex:1"><label>城市（對應美食清單）</label><input id="e_city" value="${esc(d.city||'')}" placeholder="例：巴黎"></div>
+      </div>
+      <div class="btn-row">
+        <button class="btn" onclick="saveDay(${i})">儲存</button>
+        <button class="btn ghost" onclick="openDay(${i})">取消</button>
+      </div>
+    </div>`;
+}
+function saveDay(i){
+  const d=trip().days[i];
+  d.title=val('e_title'); d.morning=val('e_m'); d.afternoon=val('e_a'); d.evening=val('e_e');
+  d.lodging=val('e_lodge'); d.link=val('e_link'); d.area=val('e_area'); d.city=val('e_city');
+  const p=val('e_price'); d.price = p===''?null:Number(p);
+  d.stops = val('e_stops').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{
+    const parts=l.split('|');
+    const name=parts[0].trim();
+    let q = parts[1]!==undefined ? parts[1].trim() : name;
+    if(parts[1]===undefined && d.area) q = name+' '+d.area;   // 只寫名字時自動補地區
+    return {name:name, q:q};
+  });
+  save(); renderAll(); openDay(i); toast('已儲存');
+}
+function val(id){ return document.getElementById(id).value.trim(); }
+
+/* ---------- cost ---------- */
+function renderCost(){
+  const t=trip(); const v=document.getElementById('view-cost');
+  const total=t.days.reduce((a,d)=>a+(d.price||0),0);
+  const per = t.people? Math.round(total/t.people):total;
+  const rows=t.days.map((d,i)=>{
+    const has=d.price!=null;
+    return `<div class="row"><div class="l"><span class="d">Day ${i+1} · ${esc(d.title||'行程')}</span>`+
+      `<span class="s">${fmtDate(d.date)}${d.lodging?' · '+esc(d.lodging):''}</span></div>`+
+      `<span class="amt ${has?'':'none'}">${has?'$'+money(d.price):'—'}</span></div>`;
+  }).join('');
+  v.innerHTML=`
+    <div class="bigstat">
+      <div class="stat"><div class="k">總花費</div><div class="v accent">$${money(total)}</div><div class="u">${t.currency}</div></div>
+      <div class="stat"><div class="k">每人分攤（${t.people} 人）</div><div class="v">$${money(per)}</div><div class="u">${t.currency}／人</div></div>
+    </div>
+    <div class="card">
+      <div class="checkhd"><h3>💰 各日花費明細</h3></div>
+      <div class="costlist">${rows}</div>
+    </div>
+    <div class="hint">＊金額直接來自各日「當日花費」，可在行程卡片點「✏️ 編輯這天」調整。空白表示尚未填。</div>`;
+}
+
+/* ---------- checklist ---------- */
+function renderCheck(){
+  const t=trip(); const v=document.getElementById('view-check');
+  v.innerHTML = checkBlock('todos','📋 待辦事項','例：購買 Swiss Travel Pass')
+              + checkBlock('packing','🎒 打包清單','例：歐規轉接插頭');
+}
+function checkBlock(key,title,ph){
+  const list=trip()[key]||[];
+  const done=list.filter(x=>x.done).length;
+  const pct=list.length?Math.round(done/list.length*100):0;
+  const items=list.map((x,i)=>`
+    <div class="chkitem ${x.done?'done':''}">
+      <div class="box" onclick="toggleChk('${key}',${i})">${x.done?'✓':''}</div>
+      <div class="t" onclick="toggleChk('${key}',${i})">${esc(x.text)}</div>
+      <button class="del" onclick="delChk('${key}',${i})">🗑</button>
+    </div>`).join('') || '<div class="hint">還沒有項目，從下面新增。</div>';
+  return `<div class="card">
+    <div class="checkhd"><h3>${title}</h3><span style="font-size:13px;color:var(--muted);font-weight:700">${done}/${list.length}</span></div>
+    <div class="progress"><i style="width:${pct}%"></i></div>
+    ${items}
+    <div class="addrow">
+      <input id="add_${key}" placeholder="${ph}" onkeydown="if(event.key==='Enter')addChk('${key}')">
+      <button onclick="addChk('${key}')">＋ 加入</button>
+    </div>
+  </div>`;
+}
+function toggleChk(key,i){ trip()[key][i].done=!trip()[key][i].done; save(); renderCheck(); }
+function delChk(key,i){ trip()[key].splice(i,1); save(); renderCheck(); }
+function addChk(key){
+  const inp=document.getElementById('add_'+key); const txt=inp.value.trim();
+  if(!txt)return; if(!trip()[key])trip()[key]=[];
+  trip()[key].push({text:txt,done:false}); save(); renderCheck();
+}
+
+/* ---------- manage trips ---------- */
+function openManage(){
+  const opts=DB.trips.map(x=>`
+    <div class="row" style="display:flex;justify-content:space-between;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line)">
+      <div><div style="font-weight:700">${esc(x.name)}${x.id===activeId?' <span style=\"color:var(--brand2);font-size:12px\">（目前）</span>':''}</div>
+        <div style="font-size:12px;color:var(--muted)">${x.days.length} 天 · ${x.people} 人</div></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn ghost" style="padding:7px 12px" onclick="switchTrip('${x.id}');closeModal('manageModal')">切換</button>
+        <button class="btn danger" style="padding:7px 12px" onclick="delTrip('${x.id}')">刪除</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('manageBody').innerHTML=`
+    <div class="sheet-hd"><button class="close" onclick="closeModal('manageModal')">×</button>
+      <div class="d">公用版 · 可放多趟旅行</div><h2>行程管理</h2></div>
+    <div class="sheet-bd">
+      <div class="card" style="margin-bottom:14px">${opts}</div>
+
+      <div class="card">
+        <h3 style="margin:0 0 10px;font-size:16px">➕ 新增一趟旅行</h3>
+        <div class="field"><label>行程名稱</label><input id="n_name" placeholder="例：東京賞櫻 5 日"></div>
+        <div class="field"><label>副標（可空）</label><input id="n_sub" placeholder="例：都內＋近郊小旅行"></div>
+        <div style="display:flex;gap:10px">
+          <div class="field" style="flex:1"><label>出發日</label><input id="n_start" type="date"></div>
+          <div class="field" style="flex:1"><label>結束日</label><input id="n_end" type="date"></div>
+        </div>
+        <div style="display:flex;gap:10px">
+          <div class="field" style="flex:1"><label>人數</label><input id="n_ppl" type="number" value="2" min="1"></div>
+          <div class="field" style="flex:1"><label>幣別</label><input id="n_cur" value="TWD"></div>
+        </div>
+        <button class="btn" onclick="createTrip()">建立空白行程</button>
+        <div class="hint">會依日期範圍自動產生每日空白卡片，之後點卡片「✏️ 編輯這天」填內容。</div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin:0 0 10px;font-size:16px">🔁 備份 / 轉移</h3>
+        <div class="btn-row">
+          <button class="btn ghost" onclick="exportTrip()">⬇️ 匯出目前行程 (JSON)</button>
+          <button class="btn ghost" onclick="document.getElementById('importFile').click()">⬆️ 匯入行程 (JSON)</button>
+        </div>
+        <div class="hint">匯出可存檔備份或傳給同行朋友；對方用匯入即可載入同一份行程。</div>
+      </div>
+    </div>`;
+  document.getElementById('manageModal').classList.add('on');
+}
+function createTrip(){
+  const name=val('n_name'); if(!name){ toast('請輸入行程名稱'); return; }
+  const s=val('n_start'), e=val('n_end');
+  if(!s||!e){ toast('請選擇出發與結束日'); return; }
+  const days=[]; let d=new Date(s+'T00:00:00'), end=new Date(e+'T00:00:00');
+  if(end<d){ toast('結束日不能早於出發日'); return; }
+  let n=1;
+  while(d<=end){
+    const iso=d.toISOString().slice(0,10);
+    days.push({date:iso,title:'第 '+n+' 天',morning:'',afternoon:'',evening:'',lodging:'',link:'',price:null,area:'',city:'',stops:[]});
+    d.setDate(d.getDate()+1); n++;
+  }
+  const t={id:slug(),name:name,subtitle:val('n_sub'),people:Number(val('n_ppl'))||1,
+    currency:val('n_cur')||'TWD',days:days,todos:[],packing:[],food:[],stays:{}};
+  DB.trips.push(t); activeId=t.id; save();
+  closeModal('manageModal'); renderAll(); setTab('itin'); toast('已建立：'+name);
+}
+function switchTrip(id){ activeId=id; save(); renderAll(); }
+function delTrip(id){
+  if(DB.trips.length<=1){ toast('至少保留一趟行程'); return; }
+  const t=DB.trips.find(x=>x.id===id);
+  if(!confirm('確定刪除「'+t.name+'」？此動作無法復原。'))return;
+  DB.trips=DB.trips.filter(x=>x.id!==id);
+  if(activeId===id)activeId=DB.trips[0].id;
+  save(); openManage(); renderAll();
+}
+function exportTrip(){
+  const t=trip(); const blob=new Blob([JSON.stringify(t,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download=(t.name||'trip').replace(/[\\/:*?"<>|]/g,'_')+'.json'; a.click();
+  toast('已匯出 JSON');
+}
+function importFile(ev){
+  const f=ev.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const t=JSON.parse(r.result);
+      if(!t.days||!Array.isArray(t.days)) throw 0;
+      t.id=slug(); t.todos=t.todos||[]; t.packing=t.packing||[];
+      t.people=t.people||1; t.currency=t.currency||'TWD';
+      DB.trips.push(t); activeId=t.id; save();
+      closeModal('manageModal'); renderAll(); setTab('itin'); toast('已匯入：'+(t.name||'行程'));
+    }catch(e){ toast('檔案格式不正確'); }
+    ev.target.value='';
+  };
+  r.readAsText(f);
+}
+
+/* ---------- misc ---------- */
+function emptyState(em,t,s){ return `<div class="empty-state"><div class="em">${em}</div><div style="font-weight:800;font-size:17px;color:var(--ink)">${t}</div><div style="margin-top:6px">${s}</div></div>`; }
+function setTab(tab){
+  document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  ['itin','food','cost','check'].forEach(x=>document.getElementById('view-'+x).style.display = x===tab?'':'none');
+  if(tab==='food')renderFood(); if(tab==='cost')renderCost(); if(tab==='check')renderCheck();
+}
+function renderAll(){ renderHeader(); renderItin(); renderFood(); renderCost(); renderCheck(); }
+
+/* ---------- 啟動 ---------- */
+initFirebase();          // 連上雲端
+setEdit(false);          // 預設「檢視模式」（別人打開只能看）
+load();                  // 先用本地／範例資料立刻顯示（離線也能看）
+_booting = false;
+renderAll();
+startSync();             // 接上雲端即時同步：別人重整就看到你最新的
+if(location.hash==='#edit') toggleEdit();   // 網址加 #edit 可直接跳出密碼框
+</script>
+</body>
+</html>

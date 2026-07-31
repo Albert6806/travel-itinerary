@@ -299,6 +299,13 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .tln-legend .lg-move::before{ background:var(--accent); }
   .tln-legend .lg-stay::before{ background:#3a9e73; }
   .tln{ position:relative; }
+  /* 時段分隔（上午／下午／晚上對比） */
+  .tln-period{ display:flex; align-items:center; gap:7px; font-weight:800; font-size:13.5px;
+    margin:18px 0 12px; padding:7px 14px; border-radius:9px; }
+  .tln-period:first-child{ margin-top:0; }
+  .p-am{ color:#8a5a12; background:#fdf1dc; border-left:4px solid var(--am); }
+  .p-pm{ color:#1c5568; background:#e5f1f6; border-left:4px solid var(--pm); }
+  .p-ev{ color:#3f3f66; background:#ecebf3; border-left:4px solid var(--ev); }
   /* 通勤段（站與站之間，橘色＝移動） */
   .tln-move{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; position:relative;
     margin-left:7px; padding:7px 0 7px 26px; }
@@ -318,8 +325,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .tln-card{ background:var(--card); border:1px solid var(--line); border-radius:14px;
     padding:11px 13px; box-shadow:0 1px 3px rgba(30,40,50,.05); }
   .tln-hd{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
-  .tln-time{ font-size:12px; font-weight:800; color:#8a6d1e; background:#f7eccf;
-    padding:2px 9px; border-radius:8px; letter-spacing:.4px; }          /* 金色＝抵達時刻 */
+  .tln-arrive{ margin-bottom:8px; }
+  .tln-time{ display:inline-flex; align-items:center; gap:4px; font-size:14px; font-weight:800; color:#fff;
+    background:linear-gradient(135deg,#caa03f,#b8862c); padding:4px 13px; border-radius:8px; letter-spacing:.6px;
+    box-shadow:0 2px 5px rgba(184,134,44,.35); }                        /* 金色＝抵達時刻（醒目） */
+  .tln-stop.hastime .dotn{ background:var(--gold); box-shadow:0 0 0 1.5px var(--gold); }
   .tln-name{ font-weight:800; font-size:15.5px; color:var(--brand); }   /* 深藍＝地點 */
   .tln-badges{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-top:9px; }
   .tln-stay{ display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700;
@@ -849,6 +859,11 @@ function queryMove(i){
   toast('看到時間後，填回「通勤時間」欄');
 }
 
+// 依抵達時刻判斷時段：<12 上午、12–18 下午、>=18 晚上
+function periodOf(time){
+  const m=/^\s*(\d{1,2})/.exec(time||''); if(!m) return null;
+  const h=+m[1]; if(h<12) return 'am'; if(h<18) return 'pm'; return 'ev';
+}
 function routeSection(d){
   const s=d.stops||[];
   if(!s.length){
@@ -856,25 +871,28 @@ function routeSection(d){
       <div class="empty">這天還沒設定站點，點下方「✏️ 編輯這天」新增。</div></div>`;
   }
   const idx=trip().days.indexOf(d);
-  const items=s.map((st,i)=>{
-    let move='';
+  const PERIOD={am:'🌅 上午',pm:'☀️ 下午',ev:'🌙 晚上'};
+  let lastP=null, items='';
+  s.forEach((st,i)=>{
+    let p=periodOf(st.time); if(p===null) p=lastP||'am';
+    if(p!==lastP){ items+=`<div class="tln-period p-${p}">${PERIOD[p]}</div>`; lastP=p; }
     if(i>0){
       const mode=st.moveMode||'transit';
       const a=s[i-1].q||s[i-1].name, b=st.q||st.name;
       let mv=st.move;
       if(!mv && mode==='walk' && st._autowalk) mv='約 '+st._autowalk+' 分（步行估）';
-      move=`<div class="tln-move"><span class="tln-move-pill">${MOVE_ICON[mode]||'🚆'} ${mv?esc(mv):(MOVE_LABEL[mode]||'交通')}</span>`+
+      items+=`<div class="tln-move"><span class="tln-move-pill">${MOVE_ICON[mode]||'🚆'} ${mv?esc(mv):(MOVE_LABEL[mode]||'交通')}</span>`+
         `<a class="tln-move-q" href="${mapsUrl(a,b,MOVE_GMODE[mode]||'transit')}" target="_blank" rel="noopener">🔎 查交通</a></div>`;
     }
-    const time = st.time? `<span class="tln-time">${esc(st.time)}</span>`:'';
+    const time = st.time? `<div class="tln-arrive"><span class="tln-time">🕓 ${esc(st.time)} 抵達</span></div>`:'';
     const stay = st.stay? `<span class="tln-stay">⏱ 停留 ${esc(st.stay)}</span>`:'';
     const map = `<a class="tln-map" href="${mapsSearch(st.q||st.name)}" target="_blank" rel="noopener">📍 地圖</a>`;
     const badges = (stay||map)? `<div class="tln-badges">${stay}${map}</div>`:'';
     const desc = st.desc? `<div class="tln-desc clip" onclick="this.classList.toggle('clip');this.nextElementSibling.textContent=this.classList.contains('clip')?'▾ 展開介紹':'▴ 收合';">${esc(st.desc)}</div>`+
-      `<span class="tln-more" onclick="var p=this.previousElementSibling;p.classList.toggle('clip');this.textContent=p.classList.contains('clip')?'▾ 展開介紹':'▴ 收合';">▾ 展開介紹</span>`:'';
-    return `${move}<div class="tln-stop"><span class="dotn"></span>`+
-      `<div class="tln-card"><div class="tln-hd">${time}<span class="tln-name">${esc(st.name)}</span></div>${badges}${desc}</div></div>`;
-  }).join('');
+      `<span class="tln-more" onclick="var pp=this.previousElementSibling;pp.classList.toggle('clip');this.textContent=pp.classList.contains('clip')?'▾ 展開介紹':'▴ 收合';">▾ 展開介紹</span>`:'';
+    items+=`<div class="tln-stop${st.time?' hastime':''}"><span class="dotn"></span>`+
+      `<div class="tln-card">${time}<div class="tln-hd"><span class="tln-name">${esc(st.name)}</span></div>${badges}${desc}</div></div>`;
+  });
   setTimeout(()=>estimateWalks(idx),60);
   return `<div class="routewrap"><h3>🧭 行程時間軸</h3>
     <div class="tln-legend"><span class="lg lg-move">通勤</span><span class="lg lg-stay">停留</span></div>

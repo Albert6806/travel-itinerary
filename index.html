@@ -769,6 +769,7 @@ function lookupDesc(name){
 }
 const MOVE_ICON={walk:'🚶',transit:'🚆',cable:'🚠',drive:'🚗',flight:'✈️',boat:'⛴️'};
 const MOVE_LABEL={walk:'步行',transit:'大眾運輸',cable:'纜車',drive:'開車',flight:'航班',boat:'渡輪'};
+const MOVE_HINT={walk:'步行會自動估，可留空',transit:'例：地鐵 20min',cable:'例：纜車 25min',drive:'例：開車 30min',flight:'例：航班 3h40m',boat:'例：渡輪 40min'};
 const MOVE_GMODE={walk:'walking',transit:'transit',cable:'transit',drive:'driving',flight:'transit',boat:'transit'};
 
 // 走路自動估：兩點經緯度 → 分鐘（1.35 路網係數、時速 4.8km）
@@ -830,12 +831,13 @@ function stopEditorHtml(){
         <div><label>停留多久</label><input placeholder="例：2h" value="${esc(s.stay||'')}" oninput="_edStops[${i}].stay=this.value"></div>
       </div>
       ${i>0?`<div class="se-mini">
-        <div><label>怎麼來的</label><select onchange="_edStops[${i}].moveMode=this.value">
+        <div><label>怎麼來的（從上一站）</label><select onchange="setMoveMode(${i},this.value)">
           ${Object.keys(MOVE_LABEL).map(m=>`<option value="${m}" ${(s.moveMode||'transit')===m?'selected':''}>${MOVE_ICON[m]} ${MOVE_LABEL[m]}</option>`).join('')}
         </select></div>
-        <div><label>通勤時間（可按「查」看 Google 再填）</label>
-          <div style="display:flex;gap:6px">
-            <input placeholder="例：3h40m" value="${esc(s.move||'')}" oninput="_edStops[${i}].move=this.value">
+        <div><label>🚆 通勤時間（從上一站到這站）</label>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span class="movetag" id="mt_${i}">${MOVE_ICON[s.moveMode||'transit']} ${MOVE_LABEL[s.moveMode||'transit']}</span>
+            <input id="mv_${i}" placeholder="${MOVE_HINT[s.moveMode||'transit']}" value="${esc(s.move||'')}" oninput="_edStops[${i}].move=this.value">
             <button type="button" class="se-q" onclick="queryMove(${i})">🔎 查</button>
           </div>
         </div>
@@ -853,10 +855,15 @@ function moveStop(i,dir){ const j=i+dir; if(j<0||j>=_edStops.length) return;
   const t=_edStops[i]; _edStops[i]=_edStops[j]; _edStops[j]=t; refreshStopEditor(); }
 function queryMove(i){
   if(i<1) return;
-  const a=_edStops[i-1].name, b=_edStops[i].name;
-  if(!a||!b){ toast('前後兩站都要先填地點名'); return; }
+  const a=_edStops[i-1].q||_edStops[i-1].name, b=_edStops[i].q||_edStops[i].name;
+  if(!a||!b){ toast('前後兩站都要先填地點'); return; }
   window.open(mapsUrl(a,b,MOVE_GMODE[_edStops[i].moveMode]||'transit'),'_blank');
   toast('看到時間後，填回「通勤時間」欄');
+}
+function setMoveMode(i,v){
+  _edStops[i].moveMode=v;
+  var t=document.getElementById('mt_'+i); if(t) t.textContent=(MOVE_ICON[v]||'')+' '+(MOVE_LABEL[v]||'');
+  var m=document.getElementById('mv_'+i); if(m) m.placeholder=MOVE_HINT[v]||'';
 }
 
 // 依抵達時刻判斷時段：<12 上午、12–18 下午、>=18 晚上

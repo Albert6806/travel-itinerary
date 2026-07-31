@@ -834,9 +834,8 @@ function stopEditorHtml(){
         <div><label>怎麼來的（從上一站）</label><select onchange="setMoveMode(${i},this.value)">
           ${Object.keys(MOVE_LABEL).map(m=>`<option value="${m}" ${(s.moveMode||'transit')===m?'selected':''}>${MOVE_ICON[m]} ${MOVE_LABEL[m]}</option>`).join('')}
         </select></div>
-        <div><label>🚆 通勤時間（從上一站到這站）</label>
+        <div><label id="ml_${i}">${MOVE_ICON[s.moveMode||'transit']} ${MOVE_LABEL[s.moveMode||'transit']}・從上一站到這站</label>
           <div style="display:flex;gap:6px;align-items:center">
-            <span class="movetag" id="mt_${i}">${MOVE_ICON[s.moveMode||'transit']} ${MOVE_LABEL[s.moveMode||'transit']}</span>
             <input id="mv_${i}" placeholder="${MOVE_HINT[s.moveMode||'transit']}" value="${esc(s.move||'')}" oninput="_edStops[${i}].move=this.value">
             <button type="button" class="se-q" onclick="queryMove(${i})">🔎 查</button>
           </div>
@@ -862,7 +861,7 @@ function queryMove(i){
 }
 function setMoveMode(i,v){
   _edStops[i].moveMode=v;
-  var t=document.getElementById('mt_'+i); if(t) t.textContent=(MOVE_ICON[v]||'')+' '+(MOVE_LABEL[v]||'');
+  var l=document.getElementById('ml_'+i); if(l) l.textContent=(MOVE_ICON[v]||'')+' '+(MOVE_LABEL[v]||'')+'・從上一站到這站';
   var m=document.getElementById('mv_'+i); if(m) m.placeholder=MOVE_HINT[v]||'';
 }
 

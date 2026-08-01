@@ -355,6 +355,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .se-mini > div{ flex:1; }
   .se-q{ white-space:nowrap; border:1px solid var(--brand2); background:#fff; color:var(--brand2);
     border-radius:8px; padding:0 10px; cursor:pointer; flex:none; }
+  .cklist{ display:flex; flex-wrap:wrap; gap:14px; padding:3px 0; }
+  .ck{ display:inline-flex; align-items:center; gap:6px; font-size:13.5px; color:var(--ink); cursor:pointer; }
+  .ck input{ width:auto; margin:0; }
+  .amrow{ display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }
+  .amtag{ font-size:11px; font-weight:700; color:#256b52; background:#e2f0e8; border:1px solid #bbdfcb; padding:2px 9px; border-radius:999px; }
   .dc-stops{ font-size:12.5px; color:var(--muted); line-height:1.7; padding:4px 0 2px; }
   .close{ cursor:pointer; }
 </style>
@@ -908,6 +913,7 @@ function openDay(i){
   const d=trip().days[i];
   const info = `<div class="info-row">
       <div class="info-box"><div class="k">🏨 住宿</div><div class="v">${d.lodging?esc(d.lodging):'—'}</div>
+        ${(d.lodgeCook||d.lodgeBfast||d.lodgeShuttle)?`<div class="amrow">${d.lodgeCook?'<span class="amtag">🍳 可自炊</span>':''}${d.lodgeBfast?'<span class="amtag">🥐 含早餐</span>':''}${d.lodgeShuttle?'<span class="amtag">🚐 有接駁</span>':''}</div>`:''}
         ${d.link?`<a class="linkbtn" href="${esc(d.link)}" target="_blank" rel="noopener">🔗 開啟訂房連結</a>`:''}</div>
       <div class="info-box"><div class="k">🧾 當日花費</div><div class="v" style="color:var(--accent)">${d.price!=null?trip().currency+' '+money(d.price):'—'}</div></div>
     </div>`;
@@ -934,6 +940,13 @@ function editDay(i){
     <div class="sheet-bd">
       <div class="field"><label>主題標題</label><input id="e_title" value="${esc(d.title||'')}"></div>
       <div class="field"><label>住宿地點</label><input id="e_lodge" value="${esc(d.lodging)}"></div>
+      <div class="field"><label>住宿設施</label>
+        <div class="cklist">
+          <label class="ck"><input type="checkbox" id="e_cook" ${d.lodgeCook?'checked':''}> 🍳 可自行烹煮</label>
+          <label class="ck"><input type="checkbox" id="e_bfast" ${d.lodgeBfast?'checked':''}> 🥐 含早餐</label>
+          <label class="ck"><input type="checkbox" id="e_shuttle" ${d.lodgeShuttle?'checked':''}> 🚐 有接駁</label>
+        </div>
+      </div>
       <div class="field"><label>訂房／參考連結</label><input id="e_link" value="${esc(d.link)}" placeholder="https://..."></div>
       <div class="field"><label>當日花費（${trip().currency}）</label><input id="e_price" type="number" value="${d.price!=null?d.price:''}" placeholder="留空代表無"></div>
       <div class="field"><label>每日站點（地點・時刻・通勤・停留・介紹，依順序）</label>
@@ -953,6 +966,9 @@ function saveDay(i){
   const d=trip().days[i];
   d.title=val('e_title');
   d.lodging=val('e_lodge'); d.link=val('e_link'); d.area=val('e_area'); d.city=val('e_city');
+  d.lodgeCook=(document.getElementById('e_cook')||{}).checked||false;
+  d.lodgeBfast=(document.getElementById('e_bfast')||{}).checked||false;
+  d.lodgeShuttle=(document.getElementById('e_shuttle')||{}).checked||false;
   const p=val('e_price'); d.price = p===''?null:Number(p);
   d.stops = _edStops.filter(s=>(s.name||'').trim()).map(s=>{
     const name=(s.name||'').trim();

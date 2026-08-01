@@ -522,7 +522,7 @@ function renderHeader(){
   document.getElementById('hName').textContent=t.name;
   document.getElementById('hSub').textContent=t.subtitle||'';
   const dr = t.days.length ? fmtDate(t.days[0].date)+' – '+fmtDate(t.days[t.days.length-1].date) : '';
-  const total = t.days.reduce((a,d)=>a+(d.price||0),0);
+  const total = t.days.reduce((a,d)=>a+(d.price||0),0) + (t.todos||[]).reduce((a,x)=>a+(Number(x.cost)||0),0);
   document.getElementById('hMeta').innerHTML=
     `<span class="chip">📆 ${t.days.length} 天</span>`+
     `<span class="chip">👥 ${t.people} 人</span>`+

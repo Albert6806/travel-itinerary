@@ -152,6 +152,8 @@ header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;hei
 .chkitem.done .t{text-decoration:line-through;color:var(--muted)}
 .chkitem .t{flex:1;font-size:14.5px}
 .chkitem .del{color:var(--muted);font-size:16px;padding:4px 6px;opacity:.6}
+.chkitem .prib{font-size:13px;padding:4px 3px;opacity:.75;background:none;border:none;cursor:pointer;line-height:1}
+.chkitem .pri{margin-right:5px}
 .addrow{display:flex;gap:8px;margin-top:12px}
 .addrow input{flex:1;padding:11px 13px;border:1px solid var(--line);border-radius:11px;font-size:14px;
   background:#fff;color:var(--ink)}
@@ -284,7 +286,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   body.ro .editbtn,
   body.ro .fc-edit,
   body.ro .fc-del,
-  body.ro .del{ display:none !important; }
+  body.ro .del, body.ro .prib{ display:none !important; }
   /* 右上角編輯開關 */
   #editToggle{ cursor:pointer; border:1px solid rgba(255,255,255,.55); background:rgba(255,255,255,.12);
     color:#fff; font:inherit; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px;
@@ -1026,15 +1028,17 @@ function checkBlock(key,title,ph,withCost){
   const done=list.filter(x=>x.done).length;
   const pct=list.length?Math.round(done/list.length*100):0;
   const sub=withCost?list.reduce((a,x)=>a+(Number(x.cost)||0),0):0;
+  const red=list.filter(x=>!x.done&&x.pri==1).length;
   const items=list.map((x,i)=>`
     <div class="chkitem ${x.done?'done':''}">
       <div class="box" onclick="toggleChk('${key}',${i})">${x.done?'✓':''}</div>
-      <div class="t" onclick="toggleChk('${key}',${i})">${esc(x.text)}</div>
+      <div class="t" onclick="toggleChk('${key}',${i})">${!x.done&&x.pri?`<span class="pri">${x.pri==1?'🔴':'🟡'}</span>`:''}${esc(x.text)}</div>
       ${withCost?`<input class="chkcost" type="number" value="${x.cost!=null?x.cost:''}" placeholder="金額" onclick="event.stopPropagation()" onchange="setChkCost('${key}',${i},this.value)">`:''}
+      <button class="prib" title="切換燈號：🔴急 → 🟡建議 → ⚪無" onclick="event.stopPropagation();cyclePri('${key}',${i})">${x.pri==1?'🔴':x.pri==2?'🟡':'⚪'}</button>
       <button class="del" onclick="delChk('${key}',${i})">🗑</button>
     </div>`).join('') || '<div class="hint">還沒有項目，從下面新增。</div>';
   return `<div class="card">
-    <div class="checkhd"><h3>${title}</h3><span style="font-size:13px;color:var(--muted);font-weight:700">${done}/${list.length}${withCost&&sub?` · 💰 $${money(sub)}`:''}</span></div>
+    <div class="checkhd"><h3>${title}</h3><span style="font-size:13px;color:var(--muted);font-weight:700">${done}/${list.length}${red?` · 🔴 ${red}`:''}${withCost&&sub?` · 💰 $${money(sub)}`:''}</span></div>
     <div class="progress"><i style="width:${pct}%"></i></div>
     ${items}
     <div class="addrow">
@@ -1044,6 +1048,7 @@ function checkBlock(key,title,ph,withCost){
     ${withCost?'<div class="hint" style="margin-top:8px">💡 車票、保險、門票等有花費的項目，在右邊填金額，會自動加進「費用」頁的總花費。</div>':''}
   </div>`;
 }
+function cyclePri(key,i){ const x=trip()[key][i]; x.pri = x.pri==1?2:(x.pri==2?null:1); save(); renderCheck(); }
 function toggleChk(key,i){ trip()[key][i].done=!trip()[key][i].done; save(); renderCheck(); }
 function delChk(key,i){ trip()[key].splice(i,1); save(); renderCheck(); }
 function addChk(key){

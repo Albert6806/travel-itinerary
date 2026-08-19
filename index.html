@@ -401,14 +401,18 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   #printArea table.pr-ov td.n{ white-space:nowrap; font-weight:800; }
   #printArea table.pr-ov td.m{ white-space:nowrap; text-align:right; color:#6b625a; }
 
-  #printArea .pr-day, #printArea .pr-chapter{ break-before:page; page-break-before:always; }
-  #printArea .pr-dayhd{ border-bottom:2px solid #c8622d; padding-bottom:7px; margin-bottom:11px; }
+  /* 每天接著排，不強制換頁（一天內容通常不到半頁，強制分頁會留一堆白）；
+     只確保日期標題不會落單在頁尾、住宿區塊不被切斷 */
+  #printArea .pr-chapter{ break-before:page; page-break-before:always; }
+  #printArea .pr-day{ margin-bottom:15px; }
+  #printArea .pr-dayhd{ border-bottom:2px solid #c8622d; padding-bottom:7px; margin-bottom:11px;
+    break-after:avoid; page-break-after:avoid; break-inside:avoid; }
   #printArea .pr-dayno{ display:inline-block; background:#c8622d; color:#fff; font-size:11px; font-weight:800;
     padding:2px 10px; border-radius:999px; }
   #printArea .pr-daydate{ font-size:11.5px; font-weight:700; color:#6b625a; margin-left:8px; }
-  #printArea .pr-daytitle{ font-size:18px; font-weight:800; margin-top:5px; }
+  #printArea .pr-daytitle{ font-size:16.5px; font-weight:800; margin-top:4px; }
   #printArea .pr-period{ font-size:10.5px; font-weight:800; color:#8a7f73; margin:9px 0 1px; letter-spacing:1px; }
-  #printArea .pr-stop{ position:relative; margin-left:4px; padding:5px 0 5px 15px; border-left:2px solid #e7e0d6;
+  #printArea .pr-stop{ position:relative; margin-left:4px; padding:3.5px 0 3.5px 15px; border-left:2px solid #e7e0d6;
     break-inside:avoid; page-break-inside:avoid; }
   #printArea .pr-stop::before{ content:""; position:absolute; left:-5px; top:10px; width:8px; height:8px;
     border-radius:50%; background:#c8622d; border:2px solid #fff; }
@@ -419,7 +423,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   #printArea .pr-move{ margin:1px 0 1px 5px; padding:2px 0 2px 14px; border-left:2px dashed #e7e0d6;
     font-size:10.5px; font-weight:700; color:#6b625a; }
   #printArea .pr-none{ font-size:11px; color:#8a7f73; padding:6px 0; }
-  #printArea .pr-info{ display:flex; gap:9px; margin-top:12px; break-inside:avoid; page-break-inside:avoid; }
+  #printArea .pr-info{ display:flex; gap:9px; margin-top:9px; break-inside:avoid; page-break-inside:avoid; }
   #printArea .pr-box{ flex:1; border:1px solid #e7e0d6; border-radius:8px; padding:7px 10px; }
   #printArea .pr-box .k{ font-size:10px; font-weight:700; color:#8a7f73; }
   #printArea .pr-box .v{ font-size:13px; font-weight:800; margin-top:2px; }
@@ -529,6 +533,7 @@ function toggleEdit(){
   } else { toast('密碼不對 🔒'); }
 }
 // 城市概略座標，用於「找我附近的美食」定位（緯度, 經度）
+const WALK={};   // 步行估算結果只放記憶體，不寫進行程資料
 const AREAS={'巴黎':[48.8566,2.3522],'蒙特勒':[46.4312,6.9107],'策馬特':[46.0207,7.7491],'格林德瓦':[46.6242,8.0342]};
 
 /* ---------- storage ---------- */
@@ -873,21 +878,21 @@ const MOVE_GMODE={walk:'walking',transit:'transit',cable:'transit',drive:'drivin
 // 走路自動估：兩點經緯度 → 分鐘（1.35 路網係數、時速 4.8km）
 function walkMins(a,b){
   if(!a||!b||a.lat==null||b.lat==null) return null;
-  const km=haversine(a.lat,a.lng,b.lat,b.lng)*1.35;
-  return Math.max(1, Math.round(km/4.8*60));
+  const straight=haversine(a.lat,a.lng,b.lat,b.lng);
+  if(!(straight>=0) || straight>8) return null;   // 超過 8 公里就不會是「走過去」，多半是座標查錯
+  return Math.max(1, Math.round(straight*1.35/4.8*60));
 }
 // 用 OpenStreetMap 免費地理編碼把地點轉成經緯度（快取，失敗就跳過）
+/* 站點座標：一律走 geoFetch（有查詢字備援、內建已驗證座標），
+   而且**不再把座標寫回行程資料** —— 舊版會把查錯的座標存進 stops，
+   包括查不到時寫入的 (0,0)（幾內亞灣外海），導致步行估算出現幾萬分鐘的荒謬數字。
+   資料裡殘留的 lat/lng/_autowalk 一律忽略。 */
 async function geocode(st){
-  if(!st || st.lat!=null) return st;
-  const q=st.q||st.name; if(!q) return st;
-  const cm=(''+q).match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);  // 直接填經緯度就用它
-  if(cm){ st.lat=+cm[1]; st.lng=+cm[2]; return st; }
-  try{
-    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q='+encodeURIComponent(q));
-    const j=await r.json();
-    if(j&&j[0]){ st.lat=+j[0].lat; st.lng=+j[0].lon; } else { st.lat=0; st.lng=0; }
-  }catch(e){}
-  return st;
+  if(!st) return null;
+  const q=(st.q||st.name||'').trim();
+  if(!q) return null;
+  const v=await geoFetch(q);
+  return (v && v.lat!=null && !(v.lat===0 && v.lng===0)) ? v : null;
 }
 // 背景把某天所有「步行段」的通勤時間估好，完成後刷新畫面
 let _estimating=false;
@@ -896,10 +901,11 @@ async function estimateWalks(i){
   try{
     const d=trip().days[i]; const s=d.stops||[]; let any=false;
     for(let k=1;k<s.length;k++){
-      if(s[k].moveMode==='walk' && !s[k].move && s[k]._autowalk==null){
-        await geocode(s[k-1]); await geocode(s[k]);
-        const m=walkMins(s[k-1],s[k]);
-        s[k]._autowalk = m!=null? m : 0;
+      const wkey=i+':'+k;
+      if(s[k].moveMode==='walk' && !s[k].move && WALK[wkey]===undefined){
+        const a=await geocode(s[k-1]), b=await geocode(s[k]);
+        const m=walkMins(a,b);
+        WALK[wkey] = m!=null? m : 0;
         if(m!=null) any=true;
       }
     }
@@ -984,7 +990,7 @@ function routeSection(d){
       const mode=st.moveMode||'transit';
       const a=s[i-1].q||s[i-1].name, b=st.q||st.name;
       let mv=st.move;
-      if(!mv && mode==='walk' && st._autowalk) mv='約 '+st._autowalk+' 分（步行估）';
+      if(!mv && mode==='walk' && WALK[idx+':'+i]) mv='約 '+WALK[idx+':'+i]+' 分（步行估）';
       items+=`<div class="tln-move"><span class="tln-move-pill">${MOVE_ICON[mode]||'🚆'} ${mv?esc(mv):(MOVE_LABEL[mode]||'交通')}</span>`+
         `<a class="tln-move-q" href="${mapsUrl(a,b,MOVE_GMODE[mode]||'transit')}" target="_blank" rel="noopener">🔎 查交通</a></div>`;
     }
@@ -1877,6 +1883,7 @@ function prMapSection(){
 function prStops(d){
   const s=d.stops||[];
   if(!s.length) return '<div class="pr-none">這天沒有安排站點。</div>';
+  const dayIdx=(trip().days||[]).indexOf(d);
   const PERIOD={am:'🌅 上午',pm:'☀️ 下午',ev:'🌙 晚上'};
   let lastP=null, out='';
   s.forEach((st,i)=>{
@@ -1885,7 +1892,7 @@ function prStops(d){
     if(i>0){
       const mode=st.moveMode||'transit';
       let mv=st.move;
-      if(!mv && mode==='walk' && st._autowalk) mv='約 '+st._autowalk+' 分（步行估）';
+      if(!mv && mode==='walk' && WALK[dayIdx+':'+i]) mv='約 '+WALK[dayIdx+':'+i]+' 分（步行估）';
       out+=`<div class="pr-move">${MOVE_ICON[mode]||'🚆'} ${mv?esc(mv):(MOVE_LABEL[mode]||'交通')}</div>`;
     }
     out+=`<div class="pr-stop">`+

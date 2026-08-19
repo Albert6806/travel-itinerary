@@ -237,6 +237,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
       <div class="brand"><span class="logo">🧭</span> 旅遊行程系統</div>
       <div class="tripsel">
         <button id="editToggle" onclick="toggleEdit()">🔒 檢視模式</button>
+        <button id="pdfBtn" onclick="exportPDF()" title="匯出 PDF：列印視窗請選「儲存為 PDF」">📄 PDF</button>
         <select id="tripSelect" onchange="switchTrip(this.value)"></select>
         <button class="iconbtn" title="行程管理" onclick="openManage()">⚙️</button>
       </div>
@@ -264,6 +265,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
 </div>
 
 <footer>離線可用 · 資料存在此裝置瀏覽器 · 建議加入主畫面當 App 用</footer>
+
+<!-- 匯出 PDF 用的列印版內容（螢幕上隱藏，只有列印時出現） -->
+<div id="printArea"></div>
 
 <!-- Day detail / edit modal -->
 <div class="modal" id="dayModal">
@@ -365,6 +369,81 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .chkcost{ width:82px; flex:none; text-align:right; font-size:13px; padding:5px 8px; }
   .dc-stops{ font-size:12.5px; color:var(--muted); line-height:1.7; padding:4px 0 2px; }
   .close{ cursor:pointer; }
+
+  /* ===== 匯出 PDF ===== */
+  #pdfBtn{ cursor:pointer; border:1px solid rgba(255,255,255,.55); background:rgba(255,255,255,.12);
+    color:#fff; font:inherit; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; white-space:nowrap; }
+  #pdfBtn:hover{ background:rgba(255,255,255,.22); }
+  #printArea{ display:none; }
+
+  @media print{
+    @page{ size:A4; margin:14mm 12mm; }
+    html,body{ background:#fff !important; }
+    body>header, body>.wrap, body>footer, .modal, .toast{ display:none !important; }
+    #printArea{ display:block !important; }
+  }
+
+  /* 列印版排版（只在列印時看得到） */
+  #printArea{ color:#1c1a17; font-size:12px; line-height:1.65;
+    -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  #printArea .pr-cover{ text-align:center; padding:24mm 0 0; }
+  #printArea .pr-cover .em{ font-size:40px; }
+  #printArea .pr-cover h1{ font-size:27px; font-weight:800; margin:10px 0 4px; letter-spacing:1px; }
+  #printArea .pr-cover .sub{ font-size:13.5px; color:#6b625a; }
+  #printArea .pr-cover .range{ margin-top:14px; font-size:15px; font-weight:800; color:#c8622d; }
+  #printArea .pr-chips{ display:flex; justify-content:center; flex-wrap:wrap; gap:7px; margin:12px 0 20px; }
+  #printArea .pr-chip{ border:1px solid #ddd5cb; border-radius:999px; padding:4px 12px; font-size:11px; font-weight:700; }
+  #printArea .pr-ovhd{ text-align:left; font-size:13px; font-weight:800; margin:0 0 6px; }
+  #printArea table.pr-ov{ width:100%; border-collapse:collapse; font-size:11px; }
+  #printArea table.pr-ov th{ background:#f4f0ea; text-align:left; padding:6px 8px; font-size:10.5px;
+    color:#6b625a; border-bottom:1.5px solid #ddd5cb; }
+  #printArea table.pr-ov td{ padding:5px 8px; border-bottom:1px solid #efe9e1; vertical-align:top; text-align:left; }
+  #printArea table.pr-ov td.n{ white-space:nowrap; font-weight:800; }
+  #printArea table.pr-ov td.m{ white-space:nowrap; text-align:right; color:#6b625a; }
+
+  #printArea .pr-day, #printArea .pr-chapter{ break-before:page; page-break-before:always; }
+  #printArea .pr-dayhd{ border-bottom:2px solid #c8622d; padding-bottom:7px; margin-bottom:11px; }
+  #printArea .pr-dayno{ display:inline-block; background:#c8622d; color:#fff; font-size:11px; font-weight:800;
+    padding:2px 10px; border-radius:999px; }
+  #printArea .pr-daydate{ font-size:11.5px; font-weight:700; color:#6b625a; margin-left:8px; }
+  #printArea .pr-daytitle{ font-size:18px; font-weight:800; margin-top:5px; }
+  #printArea .pr-period{ font-size:10.5px; font-weight:800; color:#8a7f73; margin:9px 0 1px; letter-spacing:1px; }
+  #printArea .pr-stop{ position:relative; margin-left:4px; padding:5px 0 5px 15px; border-left:2px solid #e7e0d6;
+    break-inside:avoid; page-break-inside:avoid; }
+  #printArea .pr-stop::before{ content:""; position:absolute; left:-5px; top:10px; width:8px; height:8px;
+    border-radius:50%; background:#c8622d; border:2px solid #fff; }
+  #printArea .pr-time{ font-size:11.5px; font-weight:800; color:#c8622d; }
+  #printArea .pr-name{ font-size:13.5px; font-weight:800; }
+  #printArea .pr-stay{ font-size:10.5px; font-weight:700; color:#2f6b52; }
+  #printArea .pr-desc{ font-size:10.8px; color:#4a443d; margin-top:2px; }
+  #printArea .pr-move{ margin:1px 0 1px 5px; padding:2px 0 2px 14px; border-left:2px dashed #e7e0d6;
+    font-size:10.5px; font-weight:700; color:#6b625a; }
+  #printArea .pr-none{ font-size:11px; color:#8a7f73; padding:6px 0; }
+  #printArea .pr-info{ display:flex; gap:9px; margin-top:12px; break-inside:avoid; page-break-inside:avoid; }
+  #printArea .pr-box{ flex:1; border:1px solid #e7e0d6; border-radius:8px; padding:7px 10px; }
+  #printArea .pr-box .k{ font-size:10px; font-weight:700; color:#8a7f73; }
+  #printArea .pr-box .v{ font-size:13px; font-weight:800; margin-top:2px; }
+  #printArea .pr-tags{ margin-top:4px; font-size:10px; font-weight:700; color:#256b52; }
+  #printArea .pr-detail{ margin-top:13px; border-top:1px solid #e7e0d6; padding-top:9px; }
+  #printArea .pr-dhd{ font-size:11px; font-weight:800; color:#8a7f73; letter-spacing:1px; margin-bottom:5px; }
+  #printArea .pr-dsec{ margin-bottom:8px; }
+  #printArea .pr-dlabel{ font-size:11px; font-weight:800; color:#c8622d; margin-bottom:2px; }
+  #printArea .pr-dtext{ font-size:11px; line-height:1.75; color:#3d3832; padding-left:9px;
+    border-left:2px solid #f0e9e0; white-space:normal; }
+
+  #printArea .pr-h2{ font-size:19px; font-weight:800; border-bottom:2px solid #c8622d;
+    padding-bottom:6px; margin-bottom:12px; }
+  #printArea .pr-ckhd{ display:flex; justify-content:space-between; align-items:baseline;
+    font-size:14px; font-weight:800; margin:14px 0 6px; }
+  #printArea .pr-ckhd span{ font-size:10.5px; font-weight:700; color:#8a7f73; }
+  #printArea .pr-cklist{ column-count:2; column-gap:20px; }
+  #printArea .pr-ck{ display:flex; gap:7px; align-items:flex-start; padding:4px 0;
+    border-bottom:1px dotted #ece5dc; break-inside:avoid; page-break-inside:avoid; }
+  #printArea .pr-ckbox{ flex:none; width:11px; height:11px; margin-top:2px; border:1.5px solid #a89d90;
+    border-radius:3px; font-size:9px; line-height:10px; text-align:center; font-weight:800; color:#2f6b52; }
+  #printArea .pr-cktext{ font-size:11.5px; }
+  #printArea .pr-cktext.done{ color:#9a9187; text-decoration:line-through; }
+  #printArea .pr-ckcost{ font-weight:800; color:#c8622d; }
 </style>
 
 <script>
@@ -1150,6 +1229,106 @@ function importFile(ev){
   };
   r.readAsText(f);
 }
+
+/* ---------- 匯出 PDF（封面 ／ 行程 ／ 清單） ---------- */
+function prStops(d){
+  const s=d.stops||[];
+  if(!s.length) return '<div class="pr-none">這天沒有安排站點。</div>';
+  const PERIOD={am:'🌅 上午',pm:'☀️ 下午',ev:'🌙 晚上'};
+  let lastP=null, out='';
+  s.forEach((st,i)=>{
+    let p=periodOf(st.time); if(p===null) p=lastP||'am';
+    if(p!==lastP){ out+=`<div class="pr-period">${PERIOD[p]}</div>`; lastP=p; }
+    if(i>0){
+      const mode=st.moveMode||'transit';
+      let mv=st.move;
+      if(!mv && mode==='walk' && st._autowalk) mv='約 '+st._autowalk+' 分（步行估）';
+      out+=`<div class="pr-move">${MOVE_ICON[mode]||'🚆'} ${mv?esc(mv):(MOVE_LABEL[mode]||'交通')}</div>`;
+    }
+    out+=`<div class="pr-stop">`+
+      (st.time?`<span class="pr-time">🕓 ${esc(st.time)}</span>　`:'')+
+      `<span class="pr-name">${esc(st.name)}</span>`+
+      (st.stay?`　<span class="pr-stay">⏱ 停留 ${esc(st.stay)}</span>`:'')+
+      (st.desc?`<div class="pr-desc">${esc(st.desc)}</div>`:'')+
+      `</div>`;
+  });
+  return out;
+}
+// 當日細節：把原本存在資料裡的上午／下午／晚上筆記完整印出（保留換行）
+function prDetail(d){
+  const secs=[['🌅 上午',d.morning],['☀️ 下午',d.afternoon],['🌙 晚上',d.evening]]
+    .filter(x=>x[1]&&String(x[1]).trim());
+  if(!secs.length) return '';
+  const body=secs.map(([label,txt])=>
+    `<div class="pr-dsec"><div class="pr-dlabel">${label}</div>`+
+    `<div class="pr-dtext">${esc(String(txt).trim()).replace(/\n/g,'<br>')}</div></div>`).join('');
+  return `<div class="pr-detail"><div class="pr-dhd">📝 當日細節</div>${body}</div>`;
+}
+function prDay(d,i){
+  const tags=[d.lodgeCook?'🍳 可自炊':'',d.lodgeBfast?'🥐 含早餐':'',d.lodgeShuttle?'🚐 有接駁':''].filter(Boolean).join('　');
+  return `<section class="pr-day">
+    <div class="pr-dayhd">
+      <span class="pr-dayno">Day ${i+1}</span><span class="pr-daydate">${fmtDate(d.date)}</span>
+      <div class="pr-daytitle">${esc(d.title||'行程')}</div>
+    </div>
+    ${prStops(d)}
+    <div class="pr-info">
+      <div class="pr-box"><div class="k">🏨 住宿</div><div class="v">${d.lodging?esc(d.lodging):'—'}</div>
+        ${tags?`<div class="pr-tags">${tags}</div>`:''}</div>
+    </div>
+    ${prDetail(d)}
+  </section>`;
+}
+function prCheckBlock(key,title){
+  const list=trip()[key]||[];
+  if(!list.length) return '';
+  const done=list.filter(x=>x.done).length;
+  const items=list.map(x=>
+    `<div class="pr-ck"><span class="pr-ckbox">${x.done?'✓':''}</span>`+
+    `<span class="pr-cktext${x.done?' done':''}">`+
+    (!x.done&&x.pri?(x.pri==1?'🔴 ':'🟡 '):'')+esc(x.text)+
+    `</span></div>`).join('');
+  return `<div class="pr-ckhd">${title}<span>${done}/${list.length}</span></div>
+    <div class="pr-cklist">${items}</div>`;
+}
+function buildPrintDoc(){
+  const t=trip(), days=t.days||[];
+  const dr = days.length? fmtDate(days[0].date)+' － '+fmtDate(days[days.length-1].date) : '';
+  const rows = days.map((d,i)=>
+    `<tr><td class="n">Day ${i+1}</td><td class="n">${fmtDate(d.date)}</td>`+
+    `<td>${esc(d.title||'行程')}</td><td>${d.lodging?esc(d.lodging):'—'}</td></tr>`).join('');
+  const cover = `<section class="pr-cover">
+    <div class="em">🧭</div>
+    <h1>${esc(t.name)}</h1>
+    ${t.subtitle?`<div class="sub">${esc(t.subtitle)}</div>`:''}
+    ${dr?`<div class="range">${dr}</div>`:''}
+    <div class="pr-chips">
+      <span class="pr-chip">📆 ${days.length} 天</span>
+      <span class="pr-chip">👥 ${t.people} 人</span>
+    </div>
+    <div class="pr-ovhd">每日總覽</div>
+    <table class="pr-ov"><thead><tr><th>日次</th><th>日期</th><th>主題</th><th>住宿</th></tr></thead>
+    <tbody>${rows||'<tr><td colspan="4">尚無行程</td></tr>'}</tbody></table>
+  </section>`;
+  const checks = prCheckBlock('todos','📋 待辦事項')+prCheckBlock('packing','🎒 打包清單');
+  const ckSec = checks? `<section class="pr-chapter"><div class="pr-h2">✅ 出發前清單</div>${checks}</section>` : '';
+  return cover + days.map(prDay).join('') + ckSec;
+}
+function exportPDF(){
+  const el=document.getElementById('printArea');
+  el.innerHTML=buildPrintDoc();
+  const oldTitle=document.title;
+  document.title=(trip().name||'行程').replace(/[\\/:*?"<>|]/g,'_')+'_行程手冊';
+  const restore=()=>{ document.title=oldTitle; window.removeEventListener('afterprint',restore); };
+  window.addEventListener('afterprint',restore);
+  toast('列印視窗請選「儲存為 PDF」📄');
+  setTimeout(()=>{ window.print(); setTimeout(restore,3000); },350);
+}
+// 直接按 Cmd+P／⋯列印 也能拿到同一份手冊（不會印出空白頁）
+window.addEventListener('beforeprint',()=>{
+  const el=document.getElementById('printArea');
+  if(el && !el.innerHTML.trim()) el.innerHTML=buildPrintDoc();
+});
 
 /* ---------- misc ---------- */
 function emptyState(em,t,s){ return `<div class="empty-state"><div class="em">${em}</div><div style="font-weight:800;font-size:17px;color:var(--ink)">${t}</div><div style="margin-top:6px">${s}</div></div>`; }

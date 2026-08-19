@@ -1618,15 +1618,19 @@ function prMapCanvas(pts, opts){
 
 /* 城市放大圖：在法國＋瑞士那個尺度下，巴黎市區的景點會全部疊成一個點，
    所以每個城市另外畫一張放大圖，才看得出羅浮宮在東、凱旋門在西這種關係。 */
-function prCityMap(name, pts, idx){
-  if(pts.length<2) return '';
-  // 機場、郊區車站離市區太遠，會把市區景點全擠成一坨；先以中位位置為準把它們排除
-  const mid=a=>{ const s=[...a].sort((m,n)=>m-n), h=s.length>>1; return s.length%2? s[h]:(s[h-1]+s[h])/2; };
-  const cLat=mid(pts.map(p=>p.lat)), cLng=mid(pts.map(p=>p.lng));
-  const near=pts.filter(p=>haversine(p.lat,p.lng,cLat,cLng)<=15);
-  const cut=pts.length-near.length;
-  if(near.length>=2) pts=near;
-  if(pts.length<2) return '';
+function prCityMap(name, pts, depth){
+  depth=depth||0;
+  if(pts.length<2) return {html:'', missed:[]};
+  let cut=0;
+  if(depth===0){
+    // 機場、郊區車站離市區太遠，會把市區景點全擠成一坨；先以中位位置為準把它們排除
+    const mid=a=>{ const s=[...a].sort((m,n)=>m-n), h=s.length>>1; return s.length%2? s[h]:(s[h-1]+s[h])/2; };
+    const cLat=mid(pts.map(p=>p.lat)), cLng=mid(pts.map(p=>p.lng));
+    const near=pts.filter(p=>haversine(p.lat,p.lng,cLat,cLng)<=15);
+    cut=pts.length-near.length;
+    if(near.length>=2) pts=near;
+  }
+  if(pts.length<2) return {html:'', missed:[]};
   const W=290, PAD=13;
   const lats=pts.map(p=>p.lat), lngs=pts.map(p=>p.lng);
   let minLat=Math.min(...lats), maxLat=Math.max(...lats);
@@ -1656,19 +1660,26 @@ function prCityMap(name, pts, idx){
   const seen=new Set();
   const uniq=pts.filter(p=>{ if(seen.has(p.name)) return false; seen.add(p.name); return true; });
   uniq.forEach(p=>{ const x=X(p.lng), y=Y(p.lat); boxes.push({x1:x-2.5,y1:y-2.5,x2:x+2.5,y2:y+2.5}); });
+  const missed=[];
   uniq.forEach((p,i)=>{
     const x=X(p.lng), y=Y(p.lat);
     dots+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3.2" fill="#c8622d"/>`;
-    const fs=7, w=textW(p.name,fs), h=fs+1.5;
+    // 放大圖裡名字過長會佔死版面，截短讓更多點標得到
+    const full=p.name;
+    const lim=depth>0? 18 : 24;
+    const txt=full.length>lim? full.slice(0,lim-1)+'…' : full;
+    const fs=7, w=textW(txt,fs), h=fs+1.5;
     const cands=[[x+5,y-h/2],[x-w-5,y-h/2],[x-w/2,y-h-4],[x-w/2,y+5],
                  [x+5,y+4],[x-w-5,y+4],[x+5,y-h-4],[x-w-5,y-h-4]];
+    let ok=false;
     for(const [lx,ly] of cands){
       if(fits(lx,ly,w,h)){
         labels+=`<text x="${lx.toFixed(1)}" y="${(ly+fs-1).toFixed(1)}" font-size="${fs}"
-          fill="#3d3832">${esc(p.name)}</text>`;
-        shown++; break;
+          fill="#3d3832">${esc(txt)}</text>`;
+        shown++; ok=true; break;
       }
     }
+    if(!ok) missed.push(p);
   });
   // 比例尺：抓一個好看的整數公里
   // sc 是「每度經緯度幾 px」，1 度 ≈ 111.32 km（經度方向的 cos 修正已含在 sc 用法裡）
@@ -1684,12 +1695,36 @@ function prCityMap(name, pts, idx){
     <line x1="${barPx.toFixed(1)}" y1="-2.5" x2="${barPx.toFixed(1)}" y2="2.5" stroke="#8a7f73" stroke-width="1.2"/>
     <text x="${(barPx/2).toFixed(1)}" y="-4" font-size="6.5" fill="#8a7f73" text-anchor="middle">${barKm} km</text></g>`;
 
-  return `<div class="pr-citymap">
-    <div class="pr-cmhd">📍 ${esc(name)}<span>${uniq.length} 個地點${shown<uniq.length?`・${uniq.length-shown} 個未標名`:''}${cut?`・略過 ${cut} 個遠處`:''}</span></div>
+  const html=`<div class="pr-citymap">
+    <div class="pr-cmhd">${depth?'🔎':'📍'} ${esc(name)}<span>${uniq.length} 個地點${missed.length?`・${missed.length} 個未標名`:''}${cut?`・略過 ${cut} 個遠處`:''}</span></div>
     <svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">
       <rect x="0" y="0" width="${W}" height="${H}" rx="8" fill="#f7f4ee"/>
       ${dots}${labels}${scale}
     </svg></div>`;
+  return {html:html, missed:missed, span:Math.max(spanX/kx, spanY)*111.32};
+}
+
+/* 擠不下的點就再放大一張：把沒標到名的點連同鄰近的點抓出來，
+   縮小範圍重畫，直到全部標得出來或到達第 2 層。 */
+function prZoomMaps(name, pts, depth){
+  const r=prCityMap(name, pts, depth);
+  let html=r.html;
+  if(!html || depth>=2 || r.missed.length<2) return html;
+  const linkKm=Math.max(r.span/5, 0.3);
+  const groups=geoClusters(r.missed, linkKm);
+  let n=0;
+  groups.forEach(gr=>{
+    if(gr.length<2) return;
+    // 把落在這群範圍內的其他點也一起帶進子圖，才看得出彼此關係
+    const lat0=Math.min(...gr.map(p=>p.lat)), lat1=Math.max(...gr.map(p=>p.lat));
+    const lng0=Math.min(...gr.map(p=>p.lng)), lng1=Math.max(...gr.map(p=>p.lng));
+    const sub=pts.filter(p=>p.lat>=lat0&&p.lat<=lat1&&p.lng>=lng0&&p.lng<=lng1);
+    const use=sub.length>=gr.length? sub : gr;
+    if(use.length>=pts.length) return;   // 沒縮小就別再畫，免得無限套下去
+    n++;
+    html+=prZoomMaps(name+'・放大'+(n>1?' '+n:''), use, depth+1);
+  });
+  return html;
 }
 
 function prMapSection(){
@@ -1774,7 +1809,7 @@ function prMapSection(){
   // 免得回程日掛在「巴黎」底下的瑞士車站又把比例尺拉爆
   const cityMaps=mainCities.slice().sort((a,b)=>a.days[0]-b.days[0]).map((c,i)=>{
     const near=main.filter(p=>p.city===c.name && haversine(p.lat,p.lng,c.lat,c.lng)<=50);
-    return prCityMap(c.name, near, i);
+    return prZoomMaps(c.name, near, 0);
   }).filter(Boolean).join('');
 
   return `<section class="pr-chapter">

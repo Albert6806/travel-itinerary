@@ -433,6 +433,16 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
 
   #printArea .pr-h2{ font-size:19px; font-weight:800; border-bottom:2px solid #c8622d;
     padding-bottom:6px; margin-bottom:12px; }
+  #printArea .pr-mapwrap{ border:1px solid #e7e0d6; border-radius:10px; padding:8px; background:#fbf9f6; }
+  #printArea .pr-mapwrap svg{ width:100%; height:auto; display:block; }
+  #printArea .pr-maplegend{ display:flex; gap:16px; justify-content:center; flex-wrap:wrap;
+    margin-top:9px; font-size:10.5px; color:#6b625a; font-weight:700; }
+  #printArea .pr-mapnote{ font-size:10px; color:#8a7f73; margin-top:7px; line-height:1.6; }
+  #printArea .pr-citylist{ margin-top:14px; column-count:2; column-gap:20px; }
+  #printArea .pr-cityrow{ break-inside:avoid; page-break-inside:avoid; padding:5px 0;
+    border-bottom:1px dotted #ece5dc; font-size:11px; }
+  #printArea .pr-cityrow b{ font-size:12.5px; }
+  #printArea .pr-cityrow .sp{ color:#6b625a; }
   #printArea .pr-ckhd{ display:flex; justify-content:space-between; align-items:baseline;
     font-size:14px; font-weight:800; margin:14px 0 6px; }
   #printArea .pr-ckhd span{ font-size:10.5px; font-weight:700; color:#8a7f73; }
@@ -1230,7 +1240,289 @@ function importFile(ev){
   r.readAsText(f);
 }
 
-/* ---------- 匯出 PDF（封面 ／ 行程 ／ 清單） ---------- */
+/* ---------- 地圖用：地點座標快取（獨立存放，不會寫進行程資料） ---------- */
+/* 已驗證過的地點座標（第一次匯出就不用等定位；新增的地點才會即時查） */
+const BUILTIN_GEO={
+  "Taoyuan International Airport":{lat:25.07932,lng:121.2346},
+  "Charles de Gaulle Airport":{lat:49.00689,lng:2.57108},
+  "5 bis Rue Octave Feuillet":{lat:48.86085,lng:2.27334},
+  "夏樂宮廣場（Place du Trocadéro）":{lat:48.86208,lng:2.28854},
+  "2 Allée Adrienne Lecouvreur, 75007 Paris, France":{lat:48.855,lng:2.30197},
+  "Angelina, 4 Av. du Président Wilson, 75008 Paris":{lat:48.86508,lng:2.32841},
+  "Pl. Charles de Gaulle, 75008 Paris":{lat:48.87425,lng:2.29566},
+  "5 bis Rue Octave Feuillet, 75116 Paris":{lat:48.86192,lng:2.27143},
+  "聖米歇爾山 50170法國":{lat:48.63595,lng:-1.51146},
+  "Gare de Lyon, Paris":{lat:48.84366,lng:2.37449},
+  "Gare de Lausanne":{lat:46.51699,lng:6.62917},
+  "Montreux車站":{lat:46.43108,lng:6.91299},
+  "Marché 28 Guesthouse":{lat:null,lng:null},
+  "西庸古堡":{lat:46.41424,lng:6.9276},
+  "Vevey":{lat:46.4603,lng:6.84187},
+  "Chexbres-Village":{lat:46.48118,lng:6.77853},
+  "St-Saphorin":{lat:46.47318,lng:6.79596},
+  "Vevey車站":{lat:46.4603,lng:6.84187},
+  "Visp車站":{lat:46.29131,lng:7.88119},
+  "策馬特車站":{lat:46.02121,lng:7.74925},
+  "Schluhmattstrasse 3, 3920 采爾馬特":{lat:46.01867,lng:7.7482},
+  "Schluhmattstrasse 3, 3920":{lat:46.01867,lng:7.7482},
+  "Gornergrat 觀景台 Switzerland":{lat:45.98331,lng:7.78463},
+  "Riffelberg 站":{lat:45.99294,lng:7.75508},
+  "Riffelberg":{lat:45.99294,lng:7.75508},
+  "Matterhorn Glacier Paradise":{lat:45.93738,lng:7.72935},
+  "Bahnhofstrasse, Zermatt":{lat:46.02023,lng:7.74628},
+  "Zermatt train station":{lat:46.02121,lng:7.74925},
+  "Grindelwald train station":{lat:46.62427,lng:8.03675},
+  "Dorfstrasse 133, 3818 Grindelwald":{lat:46.62372,lng:8.03819},
+  "Dorfstrasse":{lat:46.62383,lng:8.03549},
+  "Grindelwald Terminal":{lat:46.62397,lng:8.02088},
+  "Jungfraujoch":{lat:46.54758,lng:7.97897},
+  "Self Service Restaurant Aletsch":{lat:null,lng:null},
+  "Kleine Scheidegg":{lat:46.58525,lng:7.96131},
+  "Eiger Mountain & Soul Resort":{lat:46.62372,lng:8.03819},
+  "Firstbahn Grindelwald":{lat:46.63674,lng:8.04465},
+  "First, Grindelwald":{lat:46.66001,lng:8.05445},
+  "Bachalpsee":{lat:46.66958,lng:8.02095},
+  "bort":{lat:46.64653,lng:8.05187},
+  "Dorfstrasse 133, Grindelwald, BE, 3818":{lat:46.62372,lng:8.03819},
+  "格林德瓦車站":{lat:46.62427,lng:8.03675},
+  "Lauterbrunnen":{lat:46.5939,lng:7.9078},
+  "Interlaken Ost":{lat:46.69045,lng:7.869},
+  "Basel SBB":{lat:47.54762,lng:7.58964},
+  "34, Rue de l'Arbalète, 5區 - 拉丁區, 75005 巴黎":{lat:48.83956,lng:2.34654},
+  "Paris":{lat:48.85889,lng:2.32004},
+  "桃園機場":{lat:25.07932,lng:121.2346}
+};
+const GEO_KEY='travel_geo_v1';
+let GEO=null;
+function geoLoad(){
+  if(GEO) return GEO;
+  let saved={};
+  try{ saved=JSON.parse(localStorage.getItem(GEO_KEY))||{}; }catch(e){}
+  GEO=Object.assign({}, BUILTIN_GEO, saved);   // 內建為底，自己查過的優先
+  return GEO;
+}
+function geoSave(){ try{ localStorage.setItem(GEO_KEY, JSON.stringify(geoLoad())); }catch(e){} }
+/* 查詢字備援：中英混寫（「Montreux車站」）、地址帶店名（「Angelina, ...75008 Paris」）
+   這類字串直接查常常失敗、甚至查到別國同名的地方，所以依序換幾種寫法再試 */
+const GEO_CJK=/[　-〿一-鿿＀-￯]/g;
+const GEO_SUFFIX=/(train station|railway station|車站|觀景台|站台)/ig;
+function geoVariants(q){
+  const v=[q];
+  const push=s=>{ s=(s||'').replace(/\s+/g,' ').trim().replace(/^[,\s]+|[,\s]+$/g,''); if(s&&v.indexOf(s)<0) v.push(s); };
+  const base=q.replace(GEO_SUFFIX,' ');
+  push(base);
+  const latin=base.replace(GEO_CJK,' ');
+  if(/[A-Za-z]/.test(latin)) push(latin);          // 只剩數字的（如郵遞區號）不採用，會查到別國
+  const cjk=(base.match(new RegExp(GEO_CJK.source+'+','g'))||[]).join(' ');
+  push(cjk);
+  const seg=base.split(',').map(s=>s.trim()).filter(Boolean);
+  if(seg.length>1) push(seg[0]+' '+seg[seg.length-1]);   // 店名 + 城市，避免抓到同名的外國地點
+  return v;
+}
+async function geoOne(s){
+  try{
+    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=zh-TW,en&q='+encodeURIComponent(s));
+    const j=await r.json();
+    if(j&&j[0]) return {lat:+j[0].lat, lng:+j[0].lon};
+  }catch(e){}
+  return null;
+}
+async function geoFetch(q){
+  const g=geoLoad();
+  if(q in g) return g[q];
+  const cm=(''+q).match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);  // 直接填經緯度
+  if(cm){ g[q]={lat:+cm[1],lng:+cm[2]}; geoSave(); return g[q]; }
+  let hit=null;
+  const vs=geoVariants(q);
+  for(let i=0;i<vs.length && !hit;i++){
+    if(i) await new Promise(r=>setTimeout(r,1100));   // 遵守 OSM 每秒一次的規範
+    hit=await geoOne(vs[i]);
+  }
+  g[q]= hit || {lat:null,lng:null};
+  geoSave();
+  return g[q];
+}
+// 蒐集要標在地圖上的點（每個站點一筆）
+function mapTargets(){
+  const out=[];
+  (trip().days||[]).forEach((d,i)=>{
+    (d.stops||[]).forEach(s=>{
+      const q=(s.q||s.name||'').trim();
+      if(q) out.push({q:q, name:s.name||q, city:(d.city||'').trim(), day:i+1});
+    });
+  });
+  return out;
+}
+// 依 Nominatim 的使用規範，一秒一個慢慢查；查過的存快取，第二次匯出就不用等
+async function ensureGeo(onProgress){
+  const list=mapTargets(), g=geoLoad();
+  const todo=[...new Set(list.map(x=>x.q))].filter(q=>!(q in g));
+  for(let i=0;i<todo.length;i++){
+    if(onProgress) onProgress(i+1, todo.length);
+    await geoFetch(todo[i]);
+    if(i<todo.length-1) await new Promise(r=>setTimeout(r,1100));
+  }
+  return todo.length;
+}
+
+/* ---------- 地圖頁（依真實經緯度畫的示意圖） ---------- */
+function textW(s,size){                        // 粗估字寬：中日文一格、英數半格（估寬一點，寧可留空也不要擦到）
+  let w=0; for(const ch of s){ w += /[\x00-\xff]/.test(ch)? size*0.6 : size*1.04; }
+  return w;
+}
+/* 把相距 600 km 以內的點串成同一群，只保留夠大的群。
+   同名地點被查到別的國家時（例如「策馬特車站」對到黑龍江同名地），
+   會變成孤零零一個點，把整張地圖的比例尺撐爆 —— 這裡直接濾掉。 */
+function geoClusters(pts, linkKm){
+  const par=pts.map((_,i)=>i);
+  const find=i=>{ while(par[i]!==i){ par[i]=par[par[i]]; i=par[i]; } return i; };
+  for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+    if(haversine(pts[i].lat,pts[i].lng,pts[j].lat,pts[j].lng)<=linkKm){
+      const a=find(i), b=find(j); if(a!==b) par[a]=b;
+    }
+  }
+  const groups={};
+  pts.forEach((p,i)=>{ const r=find(i); (groups[r]=groups[r]||[]).push(p); });
+  return Object.values(groups).sort((a,b)=>b.length-a.length);
+}
+function prMapSection(){
+  const g=geoLoad();
+  const all=mapTargets();
+  let pts=all.map(x=>{
+    const v=g[x.q];
+    return (v && v.lat!=null && !(v.lat===0&&v.lng===0)) ? Object.assign({},x,{lat:v.lat,lng:v.lng}) : null;
+  }).filter(Boolean);
+  const failed=all.length-pts.length;
+  if(pts.length<2) return '';
+
+  const med=a=>{ const s=[...a].sort((m,n)=>m-n), h=s.length>>1;
+    return s.length%2? s[h] : (s[h-1]+s[h])/2; };
+
+  const groups=geoClusters(pts, 600);
+  const keep=Math.max(2, Math.round(pts.length*0.15));
+  const main=groups.filter(gr=>gr.length>=keep);
+  const dropped=groups.filter(gr=>gr.length<keep).reduce((a,gr)=>a.concat(gr),[]);
+  if(main.length) pts=main.reduce((a,gr)=>a.concat(gr),[]);
+  if(pts.length<2) return '';
+
+
+  // 城市中心點＝該城市所有站點的平均位置
+  const byCity={};
+  pts.forEach(p=>{ if(p.city) (byCity[p.city]=byCity[p.city]||[]).push(p); });
+  // 用中位數而非平均：city 欄位常混進當天路過的外地站點（例如回程日掛在「巴黎」底下的瑞士車站），
+  // 取平均會把城市標籤拖到不存在的位置，中位數則不受這些離群點影響
+  const cityPts=Object.keys(byCity).map(c=>{
+    const a=byCity[c], days=[...new Set(a.map(x=>x.day))].sort((m,n)=>m-n);
+    return { name:c, spots:a.length, days:days,
+      lat:med(a.map(x=>x.lat)), lng:med(a.map(x=>x.lng)) };
+  });
+
+  // 等距圓柱投影：經度依緯度收斂，避免高緯度被拉寬
+  const latM=pts.reduce((s,p)=>s+p.lat,0)/pts.length;
+  const kx=Math.cos(latM*Math.PI/180);
+  const px=p=>p.lng*kx, py=p=>-p.lat;
+  const xs=pts.map(px), ys=pts.map(py);
+  const x0=Math.min(...xs), x1=Math.max(...xs), y0=Math.min(...ys), y1=Math.max(...ys);
+  const W=620, PAD=52, MAXH=430;
+  const spanX=(x1-x0)||1e-6, spanY=(y1-y0)||1e-6;
+  // 等比例投影，高度隨內容伸縮（不然南北向短的行程下面會空一大塊）
+  let sc=(W-PAD*2)/spanX;
+  let H=spanY*sc+PAD*2;
+  if(H>MAXH){ H=MAXH; sc=(H-PAD*2)/spanY; }
+  H=Math.max(210, Math.round(H));
+  const offX=(W-spanX*sc)/2, offY=(H-spanY*sc)/2;
+  const X=p=>offX+(px(p)-x0)*sc, Y=p=>offY+(py(p)-y0)*sc;
+
+  // 標籤防重疊
+  const boxes=[];
+  const fits=(x,y,w,h)=>{
+    const r={x1:x-2,y1:y-1.5,x2:x+w+2,y2:y+h+1.5};   // 留一點邊距，標籤之間不要黏在一起
+    if(r.x1<2||r.x2>W-2||r.y1<2||r.y2>H-2) return false;
+    for(const b of boxes){ if(!(r.x2<b.x1||r.x1>b.x2||r.y2<b.y1||r.y1>b.y2)) return false; }
+    boxes.push(r); return true;
+  };
+
+  // 移動路線：依日期串起城市（連續同城市只算一次）
+  const seq=[];
+  (trip().days||[]).forEach(d=>{
+    const c=(d.city||'').trim();
+    if(c && byCity[c] && seq[seq.length-1]!==c) seq.push(c);
+  });
+  const seqPts=seq.map(c=>cityPts.find(x=>x.name===c)).filter(Boolean);
+  const path=seqPts.map((p,i)=>(i?'L':'M')+X(p).toFixed(1)+' '+Y(p).toFixed(1)).join(' ');
+
+  // 圓點先佔位，文字才不會壓在點上面
+  pts.forEach(p=>{ const x=X(p), y=Y(p); boxes.push({x1:x-3,y1:y-3,x2:x+3,y2:y+3}); });
+  cityPts.forEach(c=>{ const x=X(c), y=Y(c); boxes.push({x1:x-7,y1:y-7,x2:x+7,y2:y+7}); });
+
+  let svg=`<rect x="0" y="0" width="${W}" height="${H}" rx="10" fill="#fbf9f6"/>`;
+  if(seqPts.length>1){
+    svg+=`<path d="${path}" fill="none" stroke="#c8622d" stroke-width="1.6"
+      stroke-dasharray="6 4" stroke-linecap="round" stroke-linejoin="round" opacity=".65"/>`;
+  }
+  // 先畫景點小點（城市點壓在上面）
+  pts.forEach(p=>{
+    svg+=`<circle cx="${X(p).toFixed(1)}" cy="${Y(p).toFixed(1)}" r="2.4" fill="#b3a89b"/>`;
+  });
+  // 城市：大點＋順序編號＋名稱（優先佔位）
+  cityPts.forEach(c=>{
+    const x=X(c), y=Y(c), n=seq.indexOf(c.name)+1;
+    svg+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="6.5" fill="#fff"/>`+
+         `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="#c8622d"/>`;
+    if(n>0) svg+=`<text x="${x.toFixed(1)}" y="${(y+2.6).toFixed(1)}" font-size="7" font-weight="700"
+      fill="#fff" text-anchor="middle">${n}</text>`;
+    const label=c.name+'（Day '+(c.days.length>1? c.days[0]+'-'+c.days[c.days.length-1] : c.days[0])+'）';
+    const fs=11.5, w=textW(label,fs), h=fs+3;
+    const cands=[[x-w/2,y-h-11],[x-w/2,y+12],[x+12,y-h/2],[x-w-12,y-h/2]];
+    for(const [lx,ly] of cands){
+      if(fits(lx,ly,w,h)){
+        svg+=`<text x="${lx.toFixed(1)}" y="${(ly+fs-1).toFixed(1)}" font-size="${fs}" font-weight="800"
+          fill="#1c1a17">${esc(label)}</text>`;
+        break;
+      }
+    }
+  });
+  // 景點名稱：同名只標一次，塞得下才標，塞不下就只留小點（城市名一定看得到）
+  let shown=0;
+  const seen=new Set();
+  const uniqPts=pts.filter(p=>{ if(seen.has(p.name)) return false; seen.add(p.name); return true; });
+  uniqPts.forEach(p=>{
+    const x=X(p), y=Y(p), fs=7.6, w=textW(p.name,fs), h=fs+2;
+    const cands=[[x+7,y-h/2],[x-w-7,y-h/2],[x-w/2,y-h-6],[x-w/2,y+7]];
+    for(const [lx,ly] of cands){
+      if(fits(lx,ly,w,h)){
+        svg+=`<text x="${lx.toFixed(1)}" y="${(ly+fs-1).toFixed(1)}" font-size="${fs}"
+          fill="#6b625a">${esc(p.name)}</text>`;
+        shown++; break;
+      }
+    }
+  });
+
+  const rows=cityPts
+    .sort((a,b)=>a.days[0]-b.days[0])
+    .map(c=>{
+      const names=byCity[c.name].map(s=>s.name);
+      const uniq=[...new Set(names)];
+      return `<div class="pr-cityrow"><b>${esc(c.name)}</b>　<span class="sp">Day ${
+        c.days.length>1? c.days[0]+'–'+c.days[c.days.length-1] : c.days[0]}　${uniq.length} 個地點</span>`+
+        `<div class="sp">${esc(uniq.join('・'))}</div></div>`;
+    }).join('');
+
+  return `<section class="pr-chapter">
+    <div class="pr-h2">🗺️ 全程地點總覽</div>
+    <div class="pr-mapwrap"><svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">${svg}</svg></div>
+    <div class="pr-maplegend">
+      <span>🟠 主要城市（數字＝造訪順序）</span><span>· 景點</span><span>┄ 城市間移動路線</span>
+    </div>
+    <div class="pr-mapnote">＊ 依各地實際經緯度的相對位置繪製的示意圖（非等比例街道地圖），可看出整趟路線的走向。
+      地圖上共 ${uniqPts.length} 個地點、${cityPts.length} 個城市${shown<uniqPts.length?`；其中 ${uniqPts.length-shown} 個名稱因位置重疊未標出，詳見下方清單`:''}。
+      ${dropped.length?`<br>＊ 未列入地圖（距離主要行程範圍太遠）：${esc([...new Set(dropped.map(p=>p.name))].join('、'))}。`:''}
+      ${failed?`<br>＊ 查不到座標未列入：${failed} 個地點。可在編輯模式把該站點的「Google 查詢字」改精確一點，下次匯出就會出現。`:''}</div>
+    <div class="pr-citylist">${rows}</div>
+  </section>`;
+}
+
+/* ---------- 匯出 PDF（封面 ／ 行程 ／ 清單 ／ 地圖） ---------- */
 function prStops(d){
   const s=d.stops||[];
   if(!s.length) return '<div class="pr-none">這天沒有安排站點。</div>';
@@ -1312,9 +1604,17 @@ function buildPrintDoc(){
   </section>`;
   const checks = prCheckBlock('todos','📋 待辦事項')+prCheckBlock('packing','🎒 打包清單');
   const ckSec = checks? `<section class="pr-chapter"><div class="pr-h2">✅ 出發前清單</div>${checks}</section>` : '';
-  return cover + days.map(prDay).join('') + ckSec;
+  return cover + days.map(prDay).join('') + ckSec + prMapSection();
 }
-function exportPDF(){
+async function exportPDF(){
+  const btn=document.getElementById('pdfBtn');
+  const label=btn?btn.textContent:'';
+  try{
+    if(btn) btn.disabled=true;
+    const n=await ensureGeo((i,total)=>{ if(btn) btn.textContent='📍 定位中 '+i+'/'+total; });
+    if(n) toast('已定位 '+n+' 個地點，下次匯出就不用等了 ✨');
+  }catch(e){}
+  if(btn){ btn.disabled=false; btn.textContent=label; }
   const el=document.getElementById('printArea');
   el.innerHTML=buildPrintDoc();
   const oldTitle=document.title;

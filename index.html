@@ -395,6 +395,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .exprow .er{ text-align:right; flex:none; }
   .exprow .ea{ font-weight:800; font-size:14px; }
   .exprow .et{ font-size:11.5px; color:var(--accent); font-weight:700; }
+  .exact{ display:flex; flex-direction:column; gap:4px; flex:none; }
+  .ex-edit{ border:1px solid var(--line); background:#fff; border-radius:7px; width:28px; height:24px;
+    font-size:12px; cursor:pointer; padding:0; line-height:1; }
+  .ex-edit:hover{ background:#f4efe7; }
   .netrow{ display:flex; justify-content:space-between; align-items:center; padding:7px 2px;
     border-bottom:1px dotted var(--line); font-size:14px; }
   .netrow .nm{ font-weight:700; }
@@ -407,7 +411,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .txrow .amt{ margin-left:auto; font-weight:800; color:var(--accent); }
   body.ro .editonly{ display:none !important; }
   /* 分帳不受檢視模式限制：同行的人要能自己記帳、刪自己記錯的那筆 */
-  body.ro #view-split .del, body.ro #view-split .mdel{ display:inline-block !important; }
+  body.ro #view-split .del, body.ro #view-split .mdel, body.ro #view-split .ex-edit{ display:inline-block !important; }
 
 
   /* ===== 匯出 PDF ===== */
@@ -2162,7 +2166,10 @@ function renderSplit(){
         <div class="ea">${esc(e.cur)} ${money(Number(e.amount)||0)}</div>
         <div class="et">${twd==null?'<span style="color:#c0392b">缺匯率</span>':'≈ TWD '+money(Math.round(twd))}</div>
       </div>
-      <button class="del" onclick="delExpense(${i})">🗑</button>
+      <div class="exact">
+        <button class="ex-edit" onclick="editExpense(${i})">✏️</button>
+        <button class="del" onclick="delExpense(${i})">🗑</button>
+      </div>
     </div>`;
   };
   // 依旅遊天數分組，同一天的支出擺在一起並小計
@@ -2281,6 +2288,54 @@ function addExpense(){
   t.expenses.push({id:'e'+Date.now().toString(36), desc:desc, amount:amt, cur:cur, payer:payer, split:split, day:day});
   saveSplit(); renderSplit();
   toast('已記一筆：'+desc);
+}
+function editExpense(i){
+  const t=trip(), e=(t.expenses||[])[i]; if(!e) return;
+  const ms=t.members||[];
+  const payerOpts=ms.map(m=>`<option value="${esc(m)}" ${m===e.payer?'selected':''}>${esc(m)}</option>`).join('');
+  const curOpts=CUR_LIST.map(c=>`<option value="${c}" ${c===e.cur?'selected':''}>${c}</option>`).join('');
+  const dayOpts=(t.days||[]).map((d,di)=>
+    `<option value="${d.date}" ${d.date===e.day?'selected':''}>Day ${di+1} · ${fmtDate(d.date)}</option>`).join('')
+    + `<option value="" ${!e.day?'selected':''}>未指定</option>`;
+  const boxes=ms.map(m=>
+    `<label class="ck"><input type="checkbox" class="sp_ed" value="${esc(m)}" ${(e.split||[]).indexOf(m)>=0?'checked':''}> ${esc(m)}</label>`).join('');
+  document.getElementById('dayModalBody').innerHTML=`
+    <div class="sheet-hd"><button class="close" onclick="closeModal('dayModal')">×</button>
+      <div class="d">修改支出</div><h2>${esc(e.desc||'支出')}</h2></div>
+    <div class="sheet-bd">
+      <div class="field"><label>品項</label><input id="ed_desc" value="${esc(e.desc||'')}"></div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:2"><label>金額</label><input id="ed_amt" type="number" step="0.01" value="${Number(e.amount)||0}"></div>
+        <div class="field" style="flex:1"><label>幣別</label><select id="ed_cur">${curOpts}</select></div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>誰代付</label><select id="ed_payer">${payerOpts}</select></div>
+        <div class="field" style="flex:1"><label>哪一天</label><select id="ed_day">${dayOpts}</select></div>
+      </div>
+      <div class="field"><label>分給誰（勾選的人平均分攤）</label>
+        <div class="cklist">${boxes}</div></div>
+      <div class="btn-row">
+        <button class="btn" onclick="saveExpense(${i})">儲存修改</button>
+        <button class="btn ghost" onclick="closeModal('dayModal')">取消</button>
+      </div>
+    </div>`;
+  document.getElementById('dayModal').classList.add('on');
+}
+function saveExpense(i){
+  const t=trip(), e=(t.expenses||[])[i]; if(!e) return;
+  const desc=val('ed_desc');
+  const amt=Number(document.getElementById('ed_amt').value);
+  const split=[...document.querySelectorAll('.sp_ed')].filter(x=>x.checked).map(x=>x.value);
+  if(!desc){ toast('請填品項'); return; }
+  if(!(amt>0)){ toast('請填金額'); return; }
+  if(!split.length){ toast('至少要勾一個分攤的人'); return; }
+  e.desc=desc; e.amount=amt;
+  e.cur=document.getElementById('ed_cur').value;
+  e.payer=document.getElementById('ed_payer').value;
+  e.day=document.getElementById('ed_day').value;
+  e.split=split;
+  saveSplit(); renderSplit(); closeModal('dayModal');
+  toast('已更新：'+desc);
 }
 function delExpense(i){
   const t=trip();

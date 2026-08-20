@@ -256,12 +256,14 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
     <button data-tab="food" onclick="setTab('food')"><span class="em">🍽️</span>美食</button>
     <button data-tab="cost" onclick="setTab('cost')"><span class="em">💰</span>費用</button>
     <button data-tab="check" onclick="setTab('check')"><span class="em">✅</span>清單</button>
+    <button data-tab="split" onclick="setTab('split')"><span class="em">💰</span>分帳</button>
   </div>
 
   <div id="view-itin" class="view"></div>
   <div id="view-food" class="view" style="display:none"></div>
   <div id="view-cost" class="view" style="display:none"></div>
   <div id="view-check" class="view" style="display:none"></div>
+  <div id="view-split" class="view" style="display:none"></div>
 </div>
 
 <footer>離線可用 · 資料存在此裝置瀏覽器 · 建議加入主畫面當 App 用</footer>
@@ -369,6 +371,39 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .chkcost{ width:82px; flex:none; text-align:right; font-size:13px; padding:5px 8px; }
   .dc-stops{ font-size:12.5px; color:var(--muted); line-height:1.7; padding:4px 0 2px; }
   .close{ cursor:pointer; }
+
+  /* ===== 分帳 ===== */
+  .mrow{ display:flex; flex-wrap:wrap; gap:7px; }
+  .mchip{ display:inline-flex; align-items:center; gap:5px; background:#f2ece2; border:1px solid #e2d8c8;
+    border-radius:999px; padding:5px 6px 5px 13px; font-size:13.5px; font-weight:700; color:var(--ink); }
+  .mdel{ border:none; background:#e0d5c4; color:#7a6c58; width:17px; height:17px; border-radius:50%;
+    font-size:10px; line-height:17px; cursor:pointer; padding:0; }
+  .mdel:hover{ background:#c8622d; color:#fff; }
+  .rates{ display:flex; flex-wrap:wrap; gap:8px; }
+  .raterow{ display:flex; align-items:center; gap:6px; background:#faf7f2; border:1px solid var(--line);
+    border-radius:9px; padding:6px 10px; font-size:13px; font-weight:700; }
+  .raterow input{ width:82px; padding:4px 7px; font-size:13px; text-align:right; margin:0; }
+  .raterow .rc{ color:var(--ink); } .raterow .req{ color:var(--muted); } .raterow .rt{ color:var(--muted); font-size:12px; }
+  .exprow{ display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line); }
+  .exprow .el{ flex:1; min-width:0; }
+  .exprow .ed{ font-weight:700; font-size:14px; }
+  .exprow .es{ font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .exprow .er{ text-align:right; flex:none; }
+  .exprow .ea{ font-weight:800; font-size:14px; }
+  .exprow .et{ font-size:11.5px; color:var(--accent); font-weight:700; }
+  .netrow{ display:flex; justify-content:space-between; align-items:center; padding:7px 2px;
+    border-bottom:1px dotted var(--line); font-size:14px; }
+  .netrow .nm{ font-weight:700; }
+  .netrow .pos{ color:#2f6b52; font-weight:800; }
+  .netrow .neg{ color:#c0392b; font-weight:800; }
+  .netrow .zero{ color:var(--muted); font-weight:700; font-size:12.5px; }
+  .txhd{ margin:14px 0 8px; font-size:13px; font-weight:800; color:var(--muted); }
+  .txrow{ display:flex; align-items:center; gap:8px; background:#faf7f2; border:1px solid var(--line);
+    border-radius:10px; padding:10px 13px; margin-bottom:7px; font-size:14.5px; }
+  .txrow .amt{ margin-left:auto; font-weight:800; color:var(--accent); }
+  body.ro .mdel, body.ro .editonly{ display:none !important; }
+  body.ro .raterow input{ pointer-events:none; background:#f6f2ec; color:var(--muted); }
+
 
   /* ===== 匯出 PDF ===== */
   #pdfBtn{ cursor:pointer; border:1px solid rgba(255,255,255,.55); background:rgba(255,255,255,.12);
@@ -551,6 +586,13 @@ function migrate(){
   let changed=false;
   DB.trips.forEach(t=>{
     if(!('food'in t)){ t.food=[]; changed=true; }
+    if(!('members'in t) || !Array.isArray(t.members) || !t.members.length){
+      const n=Math.max(1, Number(t.people)||1);
+      t.members=['我']; for(let i=2;i<=n;i++) t.members.push('同行 '+i);
+      changed=true;
+    }
+    if(!('rates'in t) || typeof t.rates!=='object' || !t.rates){ t.rates={}; changed=true; }
+    if(!('expenses'in t) || !Array.isArray(t.expenses)){ t.expenses=[]; changed=true; }
     if(!('stays'in t)){ t.stays={}; changed=true; }
     (t.food||[]).forEach(f=>{
       if(!('rating'in f)){ f.rating=null; changed=true; }
@@ -1984,14 +2026,234 @@ window.addEventListener('beforeprint',()=>{
   if(el && !el.innerHTML.trim()) el.innerHTML=buildPrintDoc();
 });
 
+
+/* ================= 分帳 ================= */
+const CUR_LIST=['TWD','JPY','EUR','CHF','USD','KRW','THB','GBP','SGD','HKD','CNY','AUD','VND'];
+let _ratesBusy=false;
+
+// trip.rates 存「1 外幣 = 幾元台幣」
+function rateOf(cur){
+  if(!cur || cur==='TWD') return 1;
+  const r=(trip().rates||{})[cur];
+  return (typeof r==='number' && r>0) ? r : null;
+}
+function toTWD(amount, cur){
+  const r=rateOf(cur);
+  return r==null? null : amount*r;
+}
+// 免費匯率來源（不需註冊）：回傳 1 TWD = 幾外幣，取倒數就是我們要的
+async function fetchRates(silent){
+  if(_ratesBusy) return;
+  _ratesBusy=true;
+  try{
+    const r=await fetch('https://open.er-api.com/v6/latest/TWD');
+    const j=await r.json();
+    if(!j || !j.rates) throw 0;
+    const t=trip();
+    t.rates=t.rates||{};
+    CUR_LIST.forEach(c=>{
+      if(c==='TWD') return;
+      const v=j.rates[c];
+      if(typeof v==='number' && v>0) t.rates[c]=Math.round((1/v)*10000)/10000;
+    });
+    t.rates._at=(j.time_last_update_utc||'').slice(5,16) || new Date().toISOString().slice(0,10);
+    save(); renderSplit();
+    if(!silent) toast('匯率已更新 💱');
+  }catch(e){
+    if(!silent) toast('匯率抓取失敗，可手動填');
+  }finally{ _ratesBusy=false; }
+}
+// 進分帳頁時，沒有匯率才自動抓一次（不要每次都打擾）
+function autoRates(){
+  const t=trip();
+  const has=Object.keys(t.rates||{}).some(k=>k!=='_at');
+  if(!has) fetchRates(true);
+}
+
+/* 結算：算出每人淨額，再把「該收」與「該付」配對成最少的轉帳筆數 */
+function settle(){
+  const t=trip(), ms=t.members||[], net={}, unknown=[];
+  ms.forEach(m=>net[m]=0);
+  (t.expenses||[]).forEach(e=>{
+    const twd=toTWD(Number(e.amount)||0, e.cur);
+    if(twd==null){ unknown.push(e); return; }
+    const sp=(e.split||[]).filter(m=>ms.indexOf(m)>=0);
+    if(!sp.length) return;
+    if(net[e.payer]==null) net[e.payer]=0;
+    net[e.payer]+=twd;
+    const share=twd/sp.length;
+    sp.forEach(m=>{ net[m]-=share; });
+  });
+  const cred=[], debt=[];
+  Object.keys(net).forEach(m=>{
+    const v=Math.round(net[m]);
+    if(v>0) cred.push([m,v]); else if(v<0) debt.push([m,-v]);
+  });
+  cred.sort((a,b)=>b[1]-a[1]); debt.sort((a,b)=>b[1]-a[1]);
+  const tx=[];
+  let i=0,j=0;
+  while(i<debt.length && j<cred.length){
+    const amt=Math.min(debt[i][1], cred[j][1]);
+    if(amt>0) tx.push({from:debt[i][0], to:cred[j][0], amt:amt});
+    debt[i][1]-=amt; cred[j][1]-=amt;
+    if(debt[i][1]<=0) i++;
+    if(cred[j][1]<=0) j++;
+  }
+  return {net:net, tx:tx, unknown:unknown};
+}
+
+function renderSplit(){
+  const v=document.getElementById('view-split'); if(!v) return;
+  const t=trip(), ms=t.members||[], exp=t.expenses||[];
+  const rates=t.rates||{};
+
+  const memberChips=ms.map((m,i)=>
+    `<span class="mchip">${esc(m)}<button class="mdel" onclick="delMember(${i})">✕</button></span>`).join('')
+    || '<span class="hint">還沒有成員，先在下面新增。</span>';
+
+  const usedCur=[...new Set(exp.map(e=>e.cur))].filter(c=>c&&c!=='TWD');
+  const showCur=[...new Set(usedCur.concat(['JPY','EUR','CHF']))].slice(0,6);
+  const rateRows=showCur.map(c=>{
+    const r=rates[c];
+    return `<div class="raterow"><span class="rc">1 ${c}</span><span class="req">=</span>
+      <input type="number" step="0.0001" value="${r!=null?r:''}" placeholder="填匯率"
+        onchange="setRate('${c}',this.value)"><span class="rt">TWD</span></div>`;
+  }).join('');
+
+  const payerOpts=ms.map(m=>`<option value="${esc(m)}">${esc(m)}</option>`).join('');
+  const splitBoxes=ms.map((m,i)=>
+    `<label class="ck"><input type="checkbox" class="sp_new" value="${esc(m)}" checked> ${esc(m)}</label>`).join('');
+  const curOpts=CUR_LIST.map(c=>`<option value="${c}" ${c===(t.currency||'TWD')?'selected':''}>${c}</option>`).join('');
+
+  const rows=exp.map((e,i)=>{
+    const twd=toTWD(Number(e.amount)||0, e.cur);
+    const sp=(e.split||[]);
+    return `<div class="exprow">
+      <div class="el">
+        <div class="ed">${esc(e.desc||'支出')}</div>
+        <div class="es">${esc(e.payer||'?')} 代付 · 分 ${sp.length} 人（${esc(sp.join('、'))}）</div>
+      </div>
+      <div class="er">
+        <div class="ea">${esc(e.cur)} ${money(Number(e.amount)||0)}</div>
+        <div class="et">${twd==null?'<span style="color:#c0392b">缺匯率</span>':'≈ TWD '+money(Math.round(twd))}</div>
+      </div>
+      <button class="del" onclick="delExpense(${i})">🗑</button>
+    </div>`;
+  }).join('') || '<div class="hint">還沒有支出紀錄，用下面的表單記一筆。</div>';
+
+  const st=settle();
+  const totalTWD=exp.reduce((a,e)=>{ const x=toTWD(Number(e.amount)||0,e.cur); return a+(x||0); },0);
+  const netRows=ms.map(m=>{
+    const val=Math.round(st.net[m]||0);
+    const tag = val>0? `<span class="pos">應收 ${money(val)}</span>`
+             : val<0? `<span class="neg">應付 ${money(-val)}</span>`
+             : '<span class="zero">結清</span>';
+    return `<div class="netrow"><span class="nm">${esc(m)}</span>${tag}</div>`;
+  }).join('');
+  const txRows=st.tx.length
+    ? st.tx.map(x=>`<div class="txrow"><b>${esc(x.from)}</b> ➜ <b>${esc(x.to)}</b>
+        <span class="amt">TWD ${money(x.amt)}</span></div>`).join('')
+    : '<div class="hint">目前沒有人需要轉帳。</div>';
+
+  v.innerHTML=`
+    <div class="card">
+      <div class="checkhd"><h3>👥 同行成員</h3><span style="font-size:13px;color:var(--muted);font-weight:700">${ms.length} 人</span></div>
+      <div class="mrow">${memberChips}</div>
+      <div class="addrow editonly" style="margin-top:10px">
+        <input id="new_member" placeholder="輸入名字，例：小美" onkeydown="if(event.key==='Enter')addMember()">
+        <button onclick="addMember()">＋ 加入</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="checkhd"><h3>💱 匯率</h3>
+        <span style="font-size:12px;color:var(--muted);font-weight:700">${rates._at?('更新於 '+esc(rates._at)):'尚未取得'}</span></div>
+      <div class="rates">${rateRows}</div>
+      <button class="btn ghost editonly" style="margin-top:10px" onclick="fetchRates(false)">🔄 抓取今日匯率</button>
+      <div class="hint">自動抓的是市場參考匯率。你實際刷卡或換現的匯率不同的話，直接改上面的數字，結算會跟著重算。</div>
+    </div>
+
+    <div class="card editonly">
+      <h3 style="margin:0 0 10px;font-size:16px">➕ 記一筆</h3>
+      <div class="field"><label>品項</label><input id="ex_desc" placeholder="例：晚餐、交通票"></div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:2"><label>金額</label><input id="ex_amt" type="number" step="0.01" placeholder="50000"></div>
+        <div class="field" style="flex:1"><label>幣別</label><select id="ex_cur">${curOpts}</select></div>
+      </div>
+      <div class="field"><label>誰代付</label><select id="ex_payer">${payerOpts}</select></div>
+      <div class="field"><label>分給誰（勾選的人平均分攤）</label>
+        <div class="cklist" id="ex_split">${splitBoxes}</div></div>
+      <button class="btn" onclick="addExpense()">加入這筆</button>
+    </div>
+
+    <div class="card">
+      <div class="checkhd"><h3>🧾 支出明細</h3>
+        <span style="font-size:13px;color:var(--muted);font-weight:700">合計 ≈ TWD ${money(Math.round(totalTWD))}</span></div>
+      ${rows}
+    </div>
+
+    <div class="card">
+      <div class="checkhd"><h3>⚖️ 結算</h3></div>
+      <div class="nets">${netRows}</div>
+      ${st.unknown.length?`<div class="hint" style="color:#c0392b">有 ${st.unknown.length} 筆支出因為缺匯率沒有算進去，請先在上面填該幣別的匯率。</div>`:''}
+      <div class="txhd">最少轉帳方式</div>
+      <div class="txs">${txRows}</div>
+      <div class="hint">系統會自動抵銷：如果 A 欠你、你又欠 B，會直接變成 A 付給 B，不用繞一圈。<br>金額只有幾十元的零頭，實務上直接忽略就好。</div>
+    </div>`;
+}
+
+function addMember(){
+  const el=document.getElementById('new_member'); const n=(el.value||'').trim();
+  if(!n) return;
+  const t=trip(); t.members=t.members||[];
+  if(t.members.indexOf(n)>=0){ toast('已經有這個名字了'); return; }
+  t.members.push(n); save(); renderSplit();
+}
+function delMember(i){
+  const t=trip(), m=t.members[i];
+  const used=(t.expenses||[]).some(e=>e.payer===m || (e.split||[]).indexOf(m)>=0);
+  if(used && !confirm('「'+m+'」已經出現在支出紀錄裡，刪掉後那些紀錄會少一個分攤人。確定刪除？')) return;
+  t.members.splice(i,1);
+  (t.expenses||[]).forEach(e=>{ e.split=(e.split||[]).filter(x=>x!==m); });
+  save(); renderSplit();
+}
+function setRate(cur,val){
+  const t=trip(); t.rates=t.rates||{};
+  const n=Number(val);
+  if(val==='' ) delete t.rates[cur]; else if(n>0) t.rates[cur]=n;
+  save(); renderSplit();
+}
+function addExpense(){
+  const t=trip();
+  const desc=val('ex_desc');
+  const amt=Number(document.getElementById('ex_amt').value);
+  const cur=document.getElementById('ex_cur').value;
+  const payer=document.getElementById('ex_payer').value;
+  const split=[...document.querySelectorAll('.sp_new')].filter(x=>x.checked).map(x=>x.value);
+  if(!desc){ toast('請填品項'); return; }
+  if(!(amt>0)){ toast('請填金額'); return; }
+  if(!payer){ toast('請先新增成員'); return; }
+  if(!split.length){ toast('至少要勾一個分攤的人'); return; }
+  t.expenses=t.expenses||[];
+  t.expenses.push({id:'e'+Date.now().toString(36), desc:desc, amount:amt, cur:cur, payer:payer, split:split});
+  save(); renderSplit();
+  toast('已記一筆：'+desc);
+}
+function delExpense(i){
+  const t=trip();
+  if(!confirm('刪除這筆支出？')) return;
+  t.expenses.splice(i,1); save(); renderSplit();
+}
+
 /* ---------- misc ---------- */
 function emptyState(em,t,s){ return `<div class="empty-state"><div class="em">${em}</div><div style="font-weight:800;font-size:17px;color:var(--ink)">${t}</div><div style="margin-top:6px">${s}</div></div>`; }
 function setTab(tab){
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
-  ['itin','food','cost','check'].forEach(x=>document.getElementById('view-'+x).style.display = x===tab?'':'none');
+  ['itin','food','cost','check','split'].forEach(x=>document.getElementById('view-'+x).style.display = x===tab?'':'none');
   if(tab==='food')renderFood(); if(tab==='cost')renderCost(); if(tab==='check')renderCheck();
+  if(tab==='split'){ renderSplit(); autoRates(); }
 }
-function renderAll(){ renderHeader(); renderItin(); renderFood(); renderCost(); renderCheck(); }
+function renderAll(){ renderHeader(); renderItin(); renderFood(); renderCost(); renderCheck(); renderSplit(); }
 
 /* ---------- 啟動 ---------- */
 initFirebase();          // 連上雲端

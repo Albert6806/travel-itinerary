@@ -1376,7 +1376,14 @@ function geoLoad(){
   if(GEO) return GEO;
   let saved={};
   try{ saved=JSON.parse(localStorage.getItem(GEO_KEY))||{}; }catch(e){}
-  GEO=Object.assign({}, BUILTIN_GEO, saved);   // 內建為底，自己查過的優先
+  // 內建表是逐一驗證過的權威值，必須蓋過瀏覽器裡查錯的舊快取
+  // （例如 "ouchy" 曾被 OSM 對到澳洲昆士蘭的同名地，存進快取後就一直錯下去）
+  GEO=Object.assign({}, saved, BUILTIN_GEO);
+  // 順手清掉快取裡明顯不合理的座標：(0,0) 是查不到時的舊預設值
+  Object.keys(GEO).forEach(k=>{
+    const v=GEO[k];
+    if(v && v.lat===0 && v.lng===0) GEO[k]={lat:null,lng:null};
+  });
   return GEO;
 }
 function geoSave(){ try{ localStorage.setItem(GEO_KEY, JSON.stringify(geoLoad())); }catch(e){} }

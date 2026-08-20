@@ -384,6 +384,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
     border-radius:9px; padding:6px 10px; font-size:13px; font-weight:700; }
   .raterow input{ width:82px; padding:4px 7px; font-size:13px; text-align:right; margin:0; }
   .raterow .rc{ color:var(--ink); } .raterow .req{ color:var(--muted); } .raterow .rt{ color:var(--muted); font-size:12px; }
+  .daygrp{ margin-bottom:12px; }
+  .dgh{ display:flex; justify-content:space-between; align-items:baseline; font-size:12.5px; font-weight:800;
+    color:var(--brand2); background:#f7f2ea; border-radius:7px; padding:5px 10px; margin-bottom:2px; }
+  .dgh span{ font-size:12px; color:var(--muted); }
   .exprow{ display:flex; align-items:center; gap:10px; padding:9px 2px; border-bottom:1px solid var(--line); }
   .exprow .el{ flex:1; min-width:0; }
   .exprow .ed{ font-weight:700; font-size:14px; }
@@ -401,8 +405,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .txrow{ display:flex; align-items:center; gap:8px; background:#faf7f2; border:1px solid var(--line);
     border-radius:10px; padding:10px 13px; margin-bottom:7px; font-size:14.5px; }
   .txrow .amt{ margin-left:auto; font-weight:800; color:var(--accent); }
-  body.ro .mdel, body.ro .editonly{ display:none !important; }
-  body.ro .raterow input{ pointer-events:none; background:#f6f2ec; color:var(--muted); }
+  body.ro .editonly{ display:none !important; }
+  /* 分帳不受檢視模式限制：同行的人要能自己記帳、刪自己記錯的那筆 */
+  body.ro #view-split .del, body.ro #view-split .mdel{ display:inline-block !important; }
 
 
   /* ===== 匯出 PDF ===== */
@@ -2028,6 +2033,21 @@ window.addEventListener('beforeprint',()=>{
 
 
 /* ================= 分帳 ================= */
+/* 分帳不需要編輯密碼 —— 同行的人本來就該各自記下自己代墊的帳。
+   但唯讀者不能像編輯者那樣整包覆蓋雲端（會蓋掉別人正在改的行程內容），
+   所以這裡只更新目前這趟行程的 members / rates / expenses 三個欄位。 */
+function saveSplit(){
+  DB.activeId=activeId;
+  try{ localStorage.setItem(KEY, JSON.stringify(DB)); }catch(e){}
+  if(!STATE_REF || _booting) return;
+  const idx=DB.trips.findIndex(x=>x.id===activeId);
+  if(idx<0) return;
+  const t=DB.trips[idx];
+  STATE_REF.child('trips/'+idx).update({
+    members: t.members||[], rates: t.rates||{}, expenses: t.expenses||[]
+  }).catch(err=>{ toast('分帳儲存失敗：'+((err&&err.code)||'')); });
+}
+
 const CUR_LIST=['TWD','JPY','EUR','CHF','USD','KRW','THB','GBP','SGD','HKD','CNY','AUD','VND'];
 let _ratesBusy=false;
 
@@ -2057,7 +2077,7 @@ async function fetchRates(silent){
       if(typeof v==='number' && v>0) t.rates[c]=Math.round((1/v)*10000)/10000;
     });
     t.rates._at=(j.time_last_update_utc||'').slice(5,16) || new Date().toISOString().slice(0,10);
-    save(); renderSplit();
+    saveSplit(); renderSplit();
     if(!silent) toast('匯率已更新 💱');
   }catch(e){
     if(!silent) toast('匯率抓取失敗，可手動填');
@@ -2124,8 +2144,13 @@ function renderSplit(){
   const splitBoxes=ms.map((m,i)=>
     `<label class="ck"><input type="checkbox" class="sp_new" value="${esc(m)}" checked> ${esc(m)}</label>`).join('');
   const curOpts=CUR_LIST.map(c=>`<option value="${c}" ${c===(t.currency||'TWD')?'selected':''}>${c}</option>`).join('');
+  const today=new Date().toISOString().slice(0,10);
+  const inTrip=(t.days||[]).some(d=>d.date===today);
+  const dayOpts=(t.days||[]).map((d,i)=>
+    `<option value="${d.date}" ${d.date===today?'selected':''}>Day ${i+1} · ${fmtDate(d.date)}</option>`).join('')
+    + `<option value="" ${inTrip?'':'selected'}>未指定</option>`;
 
-  const rows=exp.map((e,i)=>{
+  const expRow=(e,i)=>{
     const twd=toTWD(Number(e.amount)||0, e.cur);
     const sp=(e.split||[]);
     return `<div class="exprow">
@@ -2139,6 +2164,19 @@ function renderSplit(){
       </div>
       <button class="del" onclick="delExpense(${i})">🗑</button>
     </div>`;
+  };
+  // 依旅遊天數分組，同一天的支出擺在一起並小計
+  const groups=[];
+  (t.days||[]).forEach((d,di)=>{
+    const items=exp.map((e,i)=>({e:e,i:i})).filter(x=>x.e.day===d.date);
+    if(items.length) groups.push({title:`Day ${di+1} · ${fmtDate(d.date)}`, items:items});
+  });
+  const noDay=exp.map((e,i)=>({e:e,i:i})).filter(x=>!x.e.day || !(t.days||[]).some(d=>d.date===x.e.day));
+  if(noDay.length) groups.push({title:'未指定日期', items:noDay});
+  const rows=groups.map(g=>{
+    const sub=g.items.reduce((a,x)=>{ const v=toTWD(Number(x.e.amount)||0,x.e.cur); return a+(v||0); },0);
+    return `<div class="daygrp"><div class="dgh">${esc(g.title)}<span>TWD ${money(Math.round(sub))}</span></div>`+
+      g.items.map(x=>expRow(x.e,x.i)).join('')+`</div>`;
   }).join('') || '<div class="hint">還沒有支出紀錄，用下面的表單記一筆。</div>';
 
   const st=settle();
@@ -2159,7 +2197,7 @@ function renderSplit(){
     <div class="card">
       <div class="checkhd"><h3>👥 同行成員</h3><span style="font-size:13px;color:var(--muted);font-weight:700">${ms.length} 人</span></div>
       <div class="mrow">${memberChips}</div>
-      <div class="addrow editonly" style="margin-top:10px">
+      <div class="addrow" style="margin-top:10px">
         <input id="new_member" placeholder="輸入名字，例：小美" onkeydown="if(event.key==='Enter')addMember()">
         <button onclick="addMember()">＋ 加入</button>
       </div>
@@ -2169,18 +2207,21 @@ function renderSplit(){
       <div class="checkhd"><h3>💱 匯率</h3>
         <span style="font-size:12px;color:var(--muted);font-weight:700">${rates._at?('更新於 '+esc(rates._at)):'尚未取得'}</span></div>
       <div class="rates">${rateRows}</div>
-      <button class="btn ghost editonly" style="margin-top:10px" onclick="fetchRates(false)">🔄 抓取今日匯率</button>
+      <button class="btn ghost" style="margin-top:10px" onclick="fetchRates(false)">🔄 抓取今日匯率</button>
       <div class="hint">自動抓的是市場參考匯率。你實際刷卡或換現的匯率不同的話，直接改上面的數字，結算會跟著重算。</div>
     </div>
 
-    <div class="card editonly">
+    <div class="card">
       <h3 style="margin:0 0 10px;font-size:16px">➕ 記一筆</h3>
       <div class="field"><label>品項</label><input id="ex_desc" placeholder="例：晚餐、交通票"></div>
       <div style="display:flex;gap:10px">
         <div class="field" style="flex:2"><label>金額</label><input id="ex_amt" type="number" step="0.01" placeholder="50000"></div>
         <div class="field" style="flex:1"><label>幣別</label><select id="ex_cur">${curOpts}</select></div>
       </div>
-      <div class="field"><label>誰代付</label><select id="ex_payer">${payerOpts}</select></div>
+      <div style="display:flex;gap:10px">
+        <div class="field" style="flex:1"><label>誰代付</label><select id="ex_payer">${payerOpts}</select></div>
+        <div class="field" style="flex:1"><label>哪一天</label><select id="ex_day">${dayOpts}</select></div>
+      </div>
       <div class="field"><label>分給誰（勾選的人平均分攤）</label>
         <div class="cklist" id="ex_split">${splitBoxes}</div></div>
       <button class="btn" onclick="addExpense()">加入這筆</button>
@@ -2207,7 +2248,7 @@ function addMember(){
   if(!n) return;
   const t=trip(); t.members=t.members||[];
   if(t.members.indexOf(n)>=0){ toast('已經有這個名字了'); return; }
-  t.members.push(n); save(); renderSplit();
+  t.members.push(n); saveSplit(); renderSplit();
 }
 function delMember(i){
   const t=trip(), m=t.members[i];
@@ -2215,13 +2256,13 @@ function delMember(i){
   if(used && !confirm('「'+m+'」已經出現在支出紀錄裡，刪掉後那些紀錄會少一個分攤人。確定刪除？')) return;
   t.members.splice(i,1);
   (t.expenses||[]).forEach(e=>{ e.split=(e.split||[]).filter(x=>x!==m); });
-  save(); renderSplit();
+  saveSplit(); renderSplit();
 }
 function setRate(cur,val){
   const t=trip(); t.rates=t.rates||{};
   const n=Number(val);
   if(val==='' ) delete t.rates[cur]; else if(n>0) t.rates[cur]=n;
-  save(); renderSplit();
+  saveSplit(); renderSplit();
 }
 function addExpense(){
   const t=trip();
@@ -2235,14 +2276,16 @@ function addExpense(){
   if(!payer){ toast('請先新增成員'); return; }
   if(!split.length){ toast('至少要勾一個分攤的人'); return; }
   t.expenses=t.expenses||[];
-  t.expenses.push({id:'e'+Date.now().toString(36), desc:desc, amount:amt, cur:cur, payer:payer, split:split});
-  save(); renderSplit();
+  const dsel=document.getElementById('ex_day');
+  const day=dsel? dsel.value : '';
+  t.expenses.push({id:'e'+Date.now().toString(36), desc:desc, amount:amt, cur:cur, payer:payer, split:split, day:day});
+  saveSplit(); renderSplit();
   toast('已記一筆：'+desc);
 }
 function delExpense(i){
   const t=trip();
   if(!confirm('刪除這筆支出？')) return;
-  t.expenses.splice(i,1); save(); renderSplit();
+  t.expenses.splice(i,1); saveSplit(); renderSplit();
 }
 
 /* ---------- misc ---------- */

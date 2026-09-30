@@ -1078,7 +1078,9 @@ function openDay(i){
       ${routeSection(d)}
       ${info}
       ${foodSection(d)}
-      <div class="btn-row"><button class="editbtn" onclick="editDay(${i})">✏️ 編輯這天</button></div>
+      <div class="btn-row"><button class="editbtn" onclick="editDay(${i})">✏️ 編輯這天</button>
+        <button class="editbtn" onclick="insertDayAfter(${i})">➕ 在後面插入一天</button>
+        <button class="editbtn" style="color:#c0392b" onclick="deleteDay(${i})">🗑️ 刪除這天</button></div>
     </div>`;
   document.getElementById('dayModal').classList.add('on');
 }
@@ -1214,6 +1216,7 @@ function openManage(){
         <div style="font-size:12px;color:var(--muted)">${x.days.length} 天 · ${x.people} 人</div></div>
       <div style="display:flex;gap:6px">
         <button class="btn ghost" style="padding:7px 12px" onclick="switchTrip('${x.id}');closeModal('manageModal')">切換</button>
+        <button class="btn ghost" style="padding:7px 12px" onclick="openEditTrip('${x.id}')">編輯</button>
         <button class="btn danger" style="padding:7px 12px" onclick="delTrip('${x.id}')">刪除</button>
       </div>
     </div>`).join('');
@@ -1266,6 +1269,115 @@ function createTrip(){
     currency:val('n_cur')||'TWD',days:days,todos:[],packing:[],food:[],stays:{}};
   DB.trips.push(t); activeId=t.id; save();
   closeModal('manageModal'); renderAll(); setTab('itin'); toast('已建立：'+name);
+}
+/* ---------- 日期調整（編輯行程 / 插入一天 / 刪除一天） ---------- */
+function addDays(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+function diffDays(a,b){ return Math.round((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000); }
+function blankDay(n){ return {date:'',title:'第 '+n+' 天',morning:'',afternoon:'',evening:'',
+  lodging:'',link:'',price:null,area:'',city:'',stops:[]}; }
+const DEFAULT_TITLE=/^第\s*\d+\s*天$/;
+/* 這一天有沒有填過東西？縮短或刪除時用來提醒，避免默默弄掉資料 */
+function dayHasContent(d){
+  return !!((d.stops&&d.stops.length) || (d.lodging||'').trim() || (d.link||'').trim()
+    || d.price!=null || ((d.title||'').trim() && !DEFAULT_TITLE.test((d.title||'').trim())));
+}
+/* 分帳的「哪一天」存的是日期字串，動到 days 之前先換算成天序號，動完再換回新日期 */
+function _expSnap(t){
+  const idx={}; (t.days||[]).forEach((d,i)=>{ if(d.date) idx[d.date]=i; });
+  (t.expenses||[]).forEach(e=>{ e._di = (e.day && idx[e.day]!=null) ? idx[e.day] : null; });
+}
+function _expApply(t,mapIdx){
+  (t.expenses||[]).forEach(e=>{
+    if(e._di==null){ delete e._di; return; }
+    const ni=mapIdx(e._di);
+    e.day = (ni!=null && t.days[ni]) ? t.days[ni].date : '';
+    delete e._di;
+  });
+}
+/* 依 days 目前的順序，把日期重排成從 startDate 起的連續日期；預設標題順便重新編號 */
+function _reseq(t,startDate){
+  t.days.forEach((d,i)=>{
+    d.date=addDays(startDate,i);
+    if(!(d.title||'').trim() || DEFAULT_TITLE.test((d.title||'').trim())) d.title='第 '+(i+1)+' 天';
+  });
+}
+
+function openEditTrip(id){
+  const t=DB.trips.find(x=>x.id===id); if(!t) return;
+  const s=t.days.length? t.days[0].date : '';
+  const e=t.days.length? t.days[t.days.length-1].date : '';
+  document.getElementById('manageBody').innerHTML=`
+    <div class="sheet-hd"><button class="close" onclick="openManage()">×</button>
+      <div class="d">${esc(t.name)} · 目前 ${t.days.length} 天</div><h2>編輯行程設定</h2></div>
+    <div class="sheet-bd">
+      <div class="card">
+        <div class="field"><label>行程名稱</label><input id="t_name" value="${esc(t.name)}"></div>
+        <div class="field"><label>副標（可空）</label><input id="t_sub" value="${esc(t.subtitle||'')}"></div>
+        <div style="display:flex;gap:10px">
+          <div class="field" style="flex:1"><label>出發日</label><input id="t_start" type="date" value="${s}"></div>
+          <div class="field" style="flex:1"><label>結束日</label><input id="t_end" type="date" value="${e}"></div>
+        </div>
+        <div class="hint">改 <b>出發日</b>：整趟平移，天數不變，每天的內容跟著日期一起移動。<br>
+          改 <b>結束日</b>：從最後一天往後加長、或往前縮短；要刪掉已經有內容的日期時會先跳出確認。<br>
+          想在中間插入或刪掉某一天 → 回行程頁點那天的卡片，裡面有「➕ 在後面插入一天 / 🗑️ 刪除這天」。</div>
+        <div style="display:flex;gap:10px">
+          <div class="field" style="flex:1"><label>人數</label><input id="t_ppl" type="number" min="1" value="${t.people||1}"></div>
+          <div class="field" style="flex:1"><label>幣別</label><input id="t_cur" value="${esc(t.currency||'TWD')}"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" onclick="saveTripEdit('${t.id}')">儲存</button>
+          <button class="btn ghost" onclick="openManage()">取消</button>
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('manageModal').classList.add('on');
+}
+function saveTripEdit(id){
+  const t=DB.trips.find(x=>x.id===id); if(!t) return;
+  const name=val('t_name'); if(!name){ toast('請輸入行程名稱'); return; }
+  const ns=val('t_start'), ne=val('t_end');
+  if(!ns||!ne){ toast('請選擇出發與結束日'); return; }
+  if(diffDays(ns,ne)<0){ toast('結束日不能早於出發日'); return; }
+  const newLen=diffDays(ns,ne)+1, oldLen=t.days.length;
+  if(newLen<oldLen){
+    const withData=t.days.slice(newLen).filter(dayHasContent).length;
+    if(!confirm('行程會從 '+oldLen+' 天縮短為 '+newLen+' 天，最後 '+(oldLen-newLen)+' 天將被刪除'
+      +(withData? '，其中 '+withData+' 天已經有內容（站點／住宿／花費）':'')+'。確定嗎？')) return;
+  }
+  _expSnap(t);
+  if(newLen<oldLen) t.days=t.days.slice(0,newLen);
+  else for(let i=oldLen;i<newLen;i++) t.days.push(blankDay(i+1));
+  _reseq(t,ns);                          // 重排日期＝整趟平移一次完成
+  _expApply(t, i=> i<newLen? i : null);  // 被刪掉的那幾天，記帳改成「未指定」
+  t.name=name; t.subtitle=val('t_sub');
+  t.people=Number(val('t_ppl'))||1; t.currency=val('t_cur')||'TWD';
+  save(); renderAll(); openManage();
+  toast('已更新：'+name+'（'+newLen+' 天）');
+}
+function insertDayAfter(i){
+  const t=trip(); if(!t.days.length) return;
+  const start=t.days[0].date;
+  _expSnap(t);
+  t.days.splice(i+1,0,blankDay(i+2));
+  _reseq(t,start);
+  _expApply(t, k=> k<=i? k : k+1);
+  save(); renderAll(); closeModal('dayModal');
+  toast('已插入 Day '+(i+2)+'，整趟延長 1 天');
+}
+function deleteDay(i){
+  const t=trip(); const d=t.days[i]; if(!d) return;
+  if(t.days.length<=1){ toast('至少要保留一天'); return; }
+  if(!confirm('刪除 Day '+(i+1)+'（'+fmtDate(d.date)+'）？'
+    +(dayHasContent(d)? '\n這天已經有內容，刪掉無法復原。':'')
+    +'\n後面的日期會往前遞補一天，整趟縮短 1 天。')) return;
+  const start=t.days[0].date;
+  _expSnap(t);
+  t.days.splice(i,1);
+  _reseq(t,start);
+  _expApply(t, k=> k===i? null : (k<i? k : k-1));
+  save(); renderAll(); closeModal('dayModal');
+  toast('已刪除 Day '+(i+1)+'，整趟縮短 1 天');
 }
 function switchTrip(id){ activeId=id; save(); renderAll(); }
 function delTrip(id){

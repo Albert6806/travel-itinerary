@@ -7,11 +7,13 @@
 <title>旅遊行程系統</title>
 <style>
 :root{
-  --bg:#f4f1ea; --card:#ffffff; --ink:#22303a; --muted:#6b7a85;
-  --line:#e6e0d4; --brand:#1b3a4b; --brand2:#2c6e7f; --accent:#c8622d;
+  --bg:#f7f5f1; --card:#ffffff; --ink:#1e2a31; --muted:#8c959b;
+  --line:#edebe5; --brand:#1b4a56; --brand2:#2f7f86; --accent:#cf6a39;
   --gold:#c99a3a; --am:#e9a23b; --pm:#3a86a8; --ev:#5b5b8a;
-  --ok:#2e9e6b; --shadow:0 6px 24px rgba(30,45,55,.10);
-  --radius:18px;
+  --ok:#2e9e6b;
+  --shadow:0 2px 10px rgba(30,45,55,.055);      /* 原本太重，整頁看起來像後台 */
+  --shadow2:0 10px 30px rgba(30,45,55,.10);
+  --radius:20px;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
@@ -26,8 +28,8 @@ a{color:inherit}
 
 /* Header */
 header{
-  background:linear-gradient(135deg,#1b3a4b 0%,#2c6e7f 60%,#3a86a8 100%);
-  color:#fff;padding:18px 0 20px;position:relative;overflow:hidden;
+  background:linear-gradient(135deg,#17414d 0%,#245f6b 55%,#2f7f86 100%);
+  color:#fff;padding:15px 0 17px;position:relative;overflow:hidden;
 }
 header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;height:200px;
   background:radial-gradient(circle,rgba(201,154,58,.35),transparent 70%);pointer-events:none}
@@ -44,16 +46,16 @@ header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;hei
   color:#fff;display:grid;place-items:center;font-size:17px;border:1px solid rgba(255,255,255,.2)}
 .iconbtn:active{transform:scale(.94)}
 .htitle{margin-top:14px}
-.htitle h1{margin:0;font-size:26px;font-weight:800;letter-spacing:.5px}
+.htitle h1{margin:0;font-size:24px;font-weight:800;letter-spacing:.2px}
 .htitle .sub{opacity:.85;font-size:14px;margin-top:2px}
-.hmeta{display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;font-size:13px}
-.hmeta .chip{background:rgba(255,255,255,.15);padding:6px 12px;border-radius:999px;
-  display:flex;align-items:center;gap:6px;font-weight:600}
+.hmeta{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap;font-size:12.5px}
+.hmeta .chip{background:rgba(255,255,255,.13);padding:5px 11px;border-radius:999px;
+  display:flex;align-items:center;gap:5px;font-weight:600}
 
 /* Tabs */
-.tabs{display:flex;gap:6px;margin:16px 0 6px;background:#fff;padding:6px;border-radius:14px;
+.tabs{display:flex;gap:4px;margin:14px 0 4px;background:#fff;padding:5px;border-radius:16px;
   box-shadow:var(--shadow);position:sticky;top:8px;z-index:20}
-.tabs button{flex:1;padding:10px 6px;border-radius:10px;font-weight:700;font-size:14px;
+.tabs button{flex:1;padding:10px 6px;border-radius:12px;font-weight:700;font-size:14px;
   color:var(--muted);transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px}
 .tabs button.on{background:var(--brand);color:#fff}
 .tabs .em{font-size:16px}
@@ -65,9 +67,9 @@ header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;hei
 /* Day cards */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .daycard{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
-  overflow:hidden;cursor:pointer;transition:.18s;border:1px solid var(--line);display:flex;flex-direction:column}
+  overflow:hidden;cursor:pointer;transition:.18s;display:flex;flex-direction:column}
 .daycard:active{transform:scale(.985)}
-.daycard:hover{box-shadow:0 10px 30px rgba(30,45,55,.16)}
+.daycard:hover{box-shadow:var(--shadow2)}
 .dc-top{padding:14px 16px 10px;background:linear-gradient(120deg,#fbf8f1,#fff);position:relative}
 .dc-daynum{position:absolute;right:14px;top:12px;font-size:12px;font-weight:800;color:#fff;
   background:var(--brand2);border-radius:8px;padding:3px 9px}
@@ -122,10 +124,9 @@ header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;hei
 
 /* Cost view */
 .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
-  padding:18px;border:1px solid var(--line);margin-bottom:14px}
+  padding:18px;margin-bottom:14px}
 .bigstat{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.stat{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px;
-  border:1px solid var(--line)}
+.stat{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
 .stat .k{font-size:12.5px;color:var(--muted);font-weight:700}
 .stat .v{font-size:26px;font-weight:800;margin-top:3px;color:var(--brand)}
 .stat .v.accent{color:var(--accent)}
@@ -187,8 +188,8 @@ header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;hei
 .locbtn:active{transform:scale(.95)}
 .food-group{margin-bottom:18px}
 .food-group .gh{font-size:15px;font-weight:800;margin:0 0 8px;display:flex;align-items:center;gap:7px;color:var(--brand)}
-.foodcard{display:flex;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:14px;
-  padding:12px 14px;box-shadow:var(--shadow);margin-bottom:10px;align-items:flex-start}
+.foodcard{display:flex;gap:12px;background:var(--card);border-radius:16px;
+  padding:13px 15px;box-shadow:var(--shadow);margin-bottom:10px;align-items:flex-start}
 .fc-cat{flex:none;font-size:12px;font-weight:800;color:var(--brand2);background:#eaf1f5;
   border-radius:9px;padding:7px 9px;white-space:nowrap;max-width:96px;text-align:center;line-height:1.3}
 .fc-main{flex:1;min-width:0}
@@ -362,7 +363,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .se-mini{ display:flex; gap:8px; margin-bottom:8px; }
   .se-mini > div{ flex:1; }
   .se-q{ white-space:nowrap; border:1px solid var(--brand2); background:#fff; color:var(--brand2);
-    border-radius:8px; padding:0 10px; cursor:pointer; flex:none; }
+    border-radius:8px; padding:0 9px; cursor:pointer; flex:none; min-height:34px; }
+  .se-mvrow{ display:flex; gap:6px; align-items:center; }
+  .se-mvrow > input{ flex:1; min-width:0; }
   .cklist{ display:flex; flex-wrap:wrap; gap:14px; padding:3px 0; }
   .ck{ display:inline-flex; align-items:center; gap:6px; font-size:13.5px; color:var(--ink); cursor:pointer; }
   .ck input{ width:auto; margin:0; }
@@ -413,6 +416,95 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   /* 分帳不受檢視模式限制：同行的人要能自己記帳、刪自己記錯的那筆 */
   body.ro #view-split .del, body.ro #view-split .mdel, body.ro #view-split .ex-edit{ display:inline-block !important; }
 
+
+  /* ===== 每日檢視（行程頁新版面） ===== */
+  /* 單日／總覽切換 */
+  .vmode{ display:flex; gap:6px; margin:0 0 12px; }
+  .vmode button{ font-size:12.5px; font-weight:700; color:var(--muted); background:#fff;
+    border-radius:999px; padding:6px 15px; box-shadow:var(--shadow); }
+  .vmode button.on{ background:var(--ink); color:#fff; }
+
+  /* 當天地圖 */
+  .dmap{ position:relative; border-radius:18px; overflow:hidden; background:#eceae4;
+    height:210px; margin-bottom:12px; box-shadow:var(--shadow); }
+  @media(min-width:680px){ .dmap{ height:280px; } }
+  .dmap-in{ position:absolute; inset:0; }
+  .dmap #dayMapBox{ width:100%; height:100%; }
+  .dmap-prog{ position:absolute; left:9px; bottom:9px; z-index:600; font-size:10.5px; font-weight:700;
+    color:#6b7a85; }
+  .dmap-prog:empty{ display:none; }
+  .dmap-in > svg{ width:100%; height:100%; display:block; }
+  .dmap-msg{ position:absolute; inset:0; display:grid; place-items:center;
+    font-size:13px; color:var(--muted); font-weight:700; text-align:center; padding:0 20px; }
+  .dmap-tog{ position:absolute; right:9px; top:9px; z-index:600; background:rgba(255,255,255,.95);
+    border-radius:999px; padding:5px 13px; font-size:11.5px; font-weight:800; color:var(--brand);
+    box-shadow:0 2px 8px rgba(0,0,0,.15); }
+  .mkr{ width:25px; height:25px; border-radius:50%; background:var(--accent); color:#fff;
+    font-size:12px; font-weight:800; display:grid; place-items:center;
+    border:2.5px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+  .leaflet-container{ font-family:inherit; background:#eceae4; }
+
+  /* 日期橫條 */
+  .dstrip{ display:flex; gap:7px; overflow-x:auto; padding:2px 2px 12px;
+    scrollbar-width:none; -webkit-overflow-scrolling:touch; }
+  .dstrip::-webkit-scrollbar{ display:none; }
+  .dchip{ flex:none; min-width:60px; text-align:center; background:#fff; border-radius:14px;
+    padding:8px 11px; cursor:pointer; transition:.15s; box-shadow:var(--shadow); }
+  .dchip:active{ transform:scale(.95); }
+  .dchip .dd{ font-size:11px; color:var(--muted); font-weight:700; white-space:nowrap; }
+  .dchip .dn{ font-size:16px; font-weight:800; color:var(--ink); margin-top:1px; letter-spacing:.3px; }
+  .dchip.on{ background:var(--brand); box-shadow:0 4px 14px rgba(27,74,86,.3); }
+  .dchip.on .dd{ color:rgba(255,255,255,.72); }
+  .dchip.on .dn{ color:#fff; }
+  .dchip.today .dn::after{ content:""; display:inline-block; width:5px; height:5px; border-radius:50%;
+    background:var(--accent); vertical-align:middle; margin-left:4px; }
+
+  /* 當天抬頭 */
+  .dhead{ display:flex; align-items:flex-start; gap:12px; margin:2px 0 6px; }
+  .dh-l{ flex:1; min-width:0; }
+  .dh-date{ font-size:12.5px; color:var(--muted); font-weight:700; }
+  .dh-title{ font-size:22px; font-weight:800; line-height:1.32; margin-top:1px; }
+  .dh-sub{ display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--muted);
+    font-weight:600; margin-top:6px; }
+  .dh-sub span{ max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dhead .editbtn{ margin-top:0; flex:none; }
+
+  /* 站點清單 */
+  .slist{ margin-top:12px; }
+  .speriod{ font-size:11.5px; font-weight:800; color:var(--muted); letter-spacing:2px;
+    margin:20px 0 6px; }
+  .speriod:first-child{ margin-top:4px; }
+  .srow{ display:flex; gap:13px; padding:11px 0; cursor:pointer; }
+  .srow:active{ opacity:.55; }
+  .s-ic{ flex:none; width:42px; height:42px; border-radius:13px; background:#f1eee8;
+    display:grid; place-items:center; font-size:20px; position:relative; }
+  .s-n{ position:absolute; left:-5px; top:-5px; width:19px; height:19px; border-radius:50%;
+    background:var(--brand); color:#fff; font-size:10.5px; font-weight:800;
+    display:grid; place-items:center; border:2px solid var(--bg); }
+  .s-body{ flex:1; min-width:0; padding-top:1px; }
+  .s-top{ display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; }
+  .s-time{ font-size:14px; font-weight:800; color:var(--accent); letter-spacing:.3px; }
+  .s-name{ font-size:16.5px; font-weight:800; line-height:1.35; }
+  .s-desc{ font-size:13px; color:#5f6c74; line-height:1.65; margin-top:3px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .s-meta{ display:flex; gap:13px; flex-wrap:wrap; font-size:11.5px; color:var(--muted);
+    font-weight:700; margin-top:6px; }
+  .s-meta a{ color:var(--brand2); text-decoration:none; }
+
+  /* 站與站之間的通勤：一條細虛線串起來 */
+  .mvrow{ display:flex; align-items:center; gap:8px; margin-left:20px;
+    padding:5px 0 5px 21px; border-left:2px dotted #dcd8cf; font-size:12px; color:var(--muted); }
+  .mvrow .mv-ic{ font-size:13.5px; }
+  .mvrow .mv-t{ font-weight:700; color:#6d7a82; }
+  .mvrow a{ color:var(--brand2); text-decoration:none; font-weight:700; font-size:11px;
+    border:1px solid var(--line); padding:2px 9px; border-radius:999px; }
+
+  /* 浮動新增按鈕 */
+  .fab{ position:fixed; right:18px; bottom:24px; width:54px; height:54px; border-radius:50%;
+    background:var(--accent); color:#fff; font-size:30px; font-weight:300; line-height:1;
+    display:grid; place-items:center; z-index:60; box-shadow:0 7px 22px rgba(207,106,57,.42); }
+  .fab:active{ transform:scale(.92); }
+  body.ro .fab{ display:none !important; }
 
   /* ===== 匯出 PDF ===== */
   #pdfBtn{ cursor:pointer; border:1px solid rgba(255,255,255,.55); background:rgba(255,255,255,.12);
@@ -682,10 +774,270 @@ function renderHeader(){
 }
 
 /* ---------- itinerary ---------- */
+/* ===== 行程頁：預設「一次看一天」，上面地圖、中間日期橫條、下面站點清單 ===== */
+let curDay=-1;                                              // 目前看第幾天（-1＝還沒決定）
+let curTab='itin';
+let itinMode=(function(){ try{ return localStorage.getItem('itinMode')||'day'; }catch(e){ return 'day'; } })();
+let mapMode =(function(){ try{ return localStorage.getItem('mapMode')||'real'; }catch(e){ return 'real'; } })();
+
+function isoToday(){ const d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+/* 預設打開哪一天：今天在行程範圍內就跳到今天，不然就第一天 */
+function defaultDay(){
+  const t=trip(); if(!t||!t.days.length) return 0;
+  const i=t.days.findIndex(d=>d.date===isoToday());
+  return i>=0? i : 0;
+}
+function fmtFull(s){ const d=new Date(s+'T00:00:00');
+  return d.getFullYear()+' 年 '+(d.getMonth()+1)+' 月 '+d.getDate()+' 日（週'+WD[d.getDay()]+'）'; }
+
 function renderItin(){
   const t=trip(); const v=document.getElementById('view-itin');
   if(!t.days.length){ v.innerHTML=emptyState('🗓️','還沒有行程','到 ⚙️ 行程管理新增日期，或編輯這趟行程'); return; }
-  v.innerHTML='<div class="grid">'+t.days.map((d,i)=>dayCard(d,i)).join('')+'</div>';
+  if(curDay<0) curDay=defaultDay();
+  curDay=Math.max(0, Math.min(curDay, t.days.length-1));
+  if(itinMode==='grid'){
+    v.innerHTML=modeBar()+'<div class="grid">'+t.days.map((d,i)=>dayCard(d,i)).join('')+'</div>';
+    return;
+  }
+  const d=t.days[curDay];
+  v.innerHTML = modeBar()
+    + '<div class="dmap" id="dayMap"></div>'
+    + dayStrip(t)
+    + dayHead(d,curDay)
+    + '<div class="slist">'+stopList(d,curDay)+'</div>'
+    + '<button class="fab editonly" title="新增一站" onclick="quickAddStop('+curDay+')">＋</button>';
+  stripIntoView();
+  drawDayMap(curDay);
+  setTimeout(()=>estimateWalks(curDay),60);
+}
+function modeBar(){
+  return '<div class="vmode">'
+    + '<button class="'+(itinMode==='day'?'on':'')+'" onclick="setItinMode(\'day\')">單日</button>'
+    + '<button class="'+(itinMode==='grid'?'on':'')+'" onclick="setItinMode(\'grid\')">總覽</button></div>';
+}
+function setItinMode(m){ itinMode=m; try{ localStorage.setItem('itinMode',m); }catch(e){} renderItin(); }
+function goDay(i){ curDay=i; renderItin(); }
+
+/* 日期橫條：可左右滑，今天那格右邊有個橘點 */
+function dayStrip(t){
+  const today=isoToday();
+  return '<div class="dstrip" id="dstrip">'+t.days.map((d,i)=>{
+    const dd=new Date(d.date+'T00:00:00');
+    return '<div class="dchip'+(i===curDay?' on':'')+(d.date===today?' today':'')+'" onclick="goDay('+i+')">'
+      +'<div class="dd">'+(dd.getMonth()+1)+'/'+dd.getDate()+' 週'+WD[dd.getDay()]+'</div>'
+      +'<div class="dn">D'+(i+1)+'</div></div>';
+  }).join('')+'</div>';
+}
+function stripIntoView(){
+  const s=document.getElementById('dstrip'); if(!s) return;
+  const on=s.querySelector('.dchip.on'); if(!on) return;
+  s.scrollLeft = Math.max(0, on.offsetLeft - s.clientWidth/2 + on.offsetWidth/2);
+}
+
+function dayHead(d,i){
+  const t=trip(), bits=[];
+  if(d.lodging) bits.push('🏨 '+esc(d.lodging));
+  if(d.price!=null) bits.push('🧾 '+t.currency+' '+money(d.price));
+  const n=(d.stops||[]).length; if(n) bits.push('📍 '+n+' 站');
+  return '<div class="dhead"><div class="dh-l">'
+    + '<div class="dh-date">'+fmtFull(d.date)+'・第 '+(i+1)+' 天</div>'
+    + '<div class="dh-title">'+esc(d.title||'行程')+'</div>'
+    + (bits.length? '<div class="dh-sub">'+bits.map(b=>'<span>'+b+'</span>').join('')+'</div>':'')
+    + '</div><button class="editbtn" onclick="openDay('+i+')">✏️ 這天</button></div>';
+}
+
+/* 站點圖示：沒指定就從地點名稱猜一個 */
+const ICON_RULES=[
+  [/(機場|airport|aéroport|flughafen)/i,'✈️'],
+  [/(纜車|cable ?car|gondola|seilbahn|télé)/i,'🚠'],
+  [/(車站|火車|station|gare|bahnhof|駅|月台|bahn)/i,'🚉'],
+  [/(地鐵|metro|subway|métro)/i,'🚇'],
+  [/(飯店|酒店|旅館|民宿|hotel|hostel|airbnb|apartment|公寓|lodge)/i,'🏨'],
+  [/(咖啡|cafe|café|coffee|茶館)/i,'☕'],
+  [/(麵包|bakery|boulangerie|甜點|p[âa]tisserie|冰淇淋|gelato|可麗餅)/i,'🥐'],
+  [/(餐廳|食堂|小館|拉麵|壽司|燒肉|火鍋|restaurant|bistro|brasserie|trattoria|pizz|burger|晚餐|午餐|吃)/i,'🍽️'],
+  [/(博物館|美術館|museum|mus[ée]e|galerie|gallery|羅浮|奧賽)/i,'🏛️'],
+  [/(教堂|大教堂|church|cathedral|cath[ée]drale|notre|basilica|修道院|sacr[ée])/i,'⛪'],
+  [/(城堡|castle|palace|palais|ch[âa]teau|宮|凡爾賽)/i,'🏰'],
+  [/(公園|花園|park|jardin|garden|廣場|place )/i,'🌳'],
+  [/(湖|lake|lac|see$|瀑布|河)/i,'🏞️'],
+  [/(山|峰|jungfrau|matterhorn|gornergrat|rothorn|glacier|冰川|阿爾卑斯|first|schilthorn)/i,'🏔️'],
+  [/(市場|market|march[ée]|百貨|購物|shopping|outlet|商店街|老佛爺|galeries)/i,'🛍️'],
+  [/(塔|tower|eiffel|鐵塔)/i,'🗼'],
+  [/(橋|bridge|pont)/i,'🌉'],
+  [/(渡輪|遊船|碼頭|port|ferry|cruise|bateau)/i,'⛴️'],
+  [/(溫泉|spa|浴場)/i,'♨️']
+];
+function stopIcon(st){
+  if((st.icon||'').trim()) return st.icon.trim();
+  const s=(st.name||'')+' '+(st.q||'')+' '+(st.desc||'');
+  for(let i=0;i<ICON_RULES.length;i++) if(ICON_RULES[i][0].test(s)) return ICON_RULES[i][1];
+  return '📍';
+}
+
+function stopList(d,idx){
+  const s=d.stops||[];
+  if(!s.length) return '<div class="empty-state" style="padding:34px 16px">'
+    +'<div class="em">📍</div><div style="font-weight:800;color:var(--ink)">這天還沒排站點</div>'
+    +'<div style="margin-top:6px;font-size:13px">按右下角的 ＋ 加第一站</div></div>';
+  const PERIOD={am:'上午',pm:'下午',ev:'晚上'};
+  let lastP=null, out='';
+  s.forEach((st,i)=>{
+    let p=periodOf(st.time); if(p===null) p=lastP||'am';
+    if(p!==lastP){ out+='<div class="speriod">'+PERIOD[p]+'</div>'; lastP=p; }
+    if(i>0) out+=moveRow(d,idx,i);
+    const meta=[];
+    if(st.stay) meta.push('<span>⏱ 停留 '+esc(st.stay)+'</span>');
+    meta.push('<a href="'+mapsSearch(st.q||st.name)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 地圖</a>');
+    out+='<div class="srow" onclick="openDay('+idx+')">'
+      + '<div class="s-ic">'+stopIcon(st)+'<span class="s-n">'+(i+1)+'</span></div>'
+      + '<div class="s-body"><div class="s-top">'
+      + (st.time? '<span class="s-time">'+esc(st.time)+'</span>':'')
+      + '<span class="s-name">'+esc(st.name)+'</span></div>'
+      + (st.desc? '<div class="s-desc">'+esc(st.desc)+'</div>':'')
+      + '<div class="s-meta">'+meta.join('')+'</div>'
+      + '</div></div>';
+  });
+  return out;
+}
+function moveRow(d,idx,i){
+  const s=d.stops, st=s[i], mode=st.moveMode||'transit';
+  let mv=st.move;
+  if(!mv && mode==='walk'  && WALK[idx+':'+i])  mv='走路約 '+WALK[idx+':'+i]+' 分';
+  if(!mv && mode==='drive' && DRIVE[idx+':'+i]) mv=driveText(DRIVE[idx+':'+i]);
+  const a=s[i-1].q||s[i-1].name, b=st.q||st.name;
+  return '<div class="mvrow"><span class="mv-ic">'+(MOVE_ICON[mode]||'🚆')+'</span>'
+    + '<span class="mv-t">'+(mv? esc(mv) : (MOVE_LABEL[mode]||'交通'))+'</span>'
+    + '<a href="'+mapsUrl(a,b,MOVE_GMODE[mode]||'transit')+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">查交通</a></div>';
+}
+/* 右下角 ＋：直接開到這天的編輯畫面並多一個空白站 */
+function quickAddStop(i){
+  document.getElementById('dayModal').classList.add('on');
+  editDay(i); addStop();
+  setTimeout(()=>{ const el=document.querySelector('#stopEditor .se-item:last-child input'); if(el) el.focus(); },150);
+}
+
+/* ===== 當天地圖：真實街道圖（Leaflet）／簡化圖（自己畫的 SVG）可切換 ===== */
+let _lmap=null, _leafletP=null, _mapSeq=0;
+function toggleMapMode(){
+  mapMode = (mapMode==='real'? 'simple':'real');
+  try{ localStorage.setItem('mapMode',mapMode); }catch(e){}
+  drawDayMap(curDay);
+}
+function mapTogBtn(){
+  return '<button class="dmap-tog" onclick="toggleMapMode()">'+(mapMode==='real'?'🗺️ 街道圖':'🧭 簡化圖')+'</button>';
+}
+/* 只有需要真實地圖時才去載 Leaflet；載不到就自動退回簡化圖 */
+function ensureLeaflet(){
+  if(window.L) return Promise.resolve(true);
+  if(_leafletP) return _leafletP;
+  _leafletP=new Promise(res=>{
+    const css=document.createElement('link'); css.rel='stylesheet';
+    css.href='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css';
+    document.head.appendChild(css);
+    const js=document.createElement('script');
+    js.src='https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js';
+    js.onload=()=>res(true); js.onerror=()=>res(false);
+    document.head.appendChild(js);
+    setTimeout(()=>res(!!window.L), 9000);     // 網路太慢就別卡著
+  });
+  return _leafletP;
+}
+function mapProg(txt){ const p=document.getElementById('dayMapProg'); if(p) p.textContent=txt||''; }
+function mapMsg(html){ const i=document.getElementById('dayMapIn'); if(i) i.innerHTML='<div class="dmap-msg">'+html+'</div>'; }
+
+/* 站點座標要一個一個查（Nominatim 不能猛打），所以查到一個就先畫一個，
+   地圖會自己長出來，不用等全部查完才看到東西 */
+async function drawDayMap(i){
+  const box=document.getElementById('dayMap'); if(!box) return;
+  const seq=++_mapSeq;
+  const d=trip().days[i];
+  const stops=(d.stops||[]).filter(x=>((x.q||x.name||'').trim()));
+  box.innerHTML='<div class="dmap-in" id="dayMapIn"></div>'+mapTogBtn()+'<div class="dmap-prog" id="dayMapProg"></div>';
+  if(!stops.length){ mapMsg('這天還沒有站點<br>加了站點就會畫出當天路線'); return; }
+  mapMsg('定位中…');
+  const useReal = (mapMode==='real') && await ensureLeaflet();
+  if(seq!==_mapSeq) return;
+  const pts=[]; let lm=null;
+  for(let k=0;k<stops.length;k++){
+    mapProg('定位中… '+k+'/'+stops.length);
+    const v=await geocode(stops[k]);
+    if(seq!==_mapSeq) return;                       // 已經切到別天，這次作廢
+    if(!v) continue;
+    pts.push({lat:v.lat,lng:v.lng,name:stops[k].name||stops[k].q});
+    if(useReal){
+      if(!lm) lm=leafletStart();
+      leafletAdd(lm, pts[pts.length-1], pts.length);
+    }else{
+      const inn=document.getElementById('dayMapIn'); if(inn) inn.innerHTML=daySvg(pts);
+    }
+  }
+  if(seq!==_mapSeq) return;
+  mapProg('');
+  if(!pts.length) mapMsg('查不到這天站點的座標<br>在「🗺️ 地圖定位」填清楚的地址會更準');
+}
+function leafletStart(){
+  const inn=document.getElementById('dayMapIn'); if(!inn) return null;
+  inn.innerHTML='<div id="dayMapBox"></div>';
+  if(_lmap){ try{ _lmap.remove(); }catch(e){} _lmap=null; }
+  const m=L.map('dayMapBox',{scrollWheelZoom:false});
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    {maxZoom:19, attribution:'© OpenStreetMap'}).addTo(m);
+  m.__ll=[]; m.__line=null;
+  _lmap=m;
+  setTimeout(()=>{ try{ m.invalidateSize(); }catch(e){} },80);
+  return m;
+}
+function leafletAdd(m,p,n){
+  if(!m) return;
+  m.__ll.push([p.lat,p.lng]);
+  L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:'<div class="mkr">'+n+'</div>',
+    iconSize:[25,25], iconAnchor:[12,12]})}).addTo(m).bindPopup(esc(p.name));
+  if(m.__ll.length>1){
+    if(m.__line) m.removeLayer(m.__line);
+    m.__line=L.polyline(m.__ll,{color:'#cf6a39',weight:3,opacity:.85,dashArray:'7 7'}).addTo(m);
+    m.fitBounds(m.__ll,{padding:[30,30], maxZoom:16});
+  }else{
+    m.setView(m.__ll[0],13);
+  }
+}
+/* 簡化圖：白底 + 編號地點 + 虛線路徑。沒網路也看得到先後順序和相對位置 */
+function daySvg(pts){
+  const W=600,H=260,pad=40;
+  const lats=pts.map(p=>p.lat), lngs=pts.map(p=>p.lng);
+  const minLat=Math.min.apply(null,lats), maxLat=Math.max.apply(null,lats);
+  const minLng=Math.min.apply(null,lngs), maxLng=Math.max.apply(null,lngs);
+  const cLat=(minLat+maxLat)/2, cLng=(minLng+maxLng)/2;
+  const k=Math.cos(cLat*Math.PI/180);
+  const spanX=Math.max((maxLng-minLng)*k,1e-4), spanY=Math.max(maxLat-minLat,1e-4);
+  const sc=Math.min((W-2*pad)/spanX,(H-2*pad)/spanY);
+  const X=g=>W/2+(g-cLng)*k*sc, Y=t=>H/2-(t-cLat)*sc;
+  const xy=pts.map(p=>[X(p.lng),Y(p.lat)]);
+  const line=xy.length>1? '<polyline points="'+xy.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')
+    +'" fill="none" stroke="#cf6a39" stroke-width="2.4" stroke-dasharray="7 7" stroke-linejoin="round"/>':'';
+  // 標籤：擺得下才標，重疊就跳過
+  const boxes=[], tw=s=>{ let w=0; for(const ch of s) w+=/[　-鿿＀-￯]/.test(ch)?10:5.6; return w; };
+  const hit=(x,y,w,h)=>boxes.some(b=>!(x+w<b[0]||x>b[0]+b[2]||y+h<b[1]||y>b[1]+b[3]));
+  let labels='';
+  pts.forEach((p,i)=>{
+    const [x,y]=xy[i], name=(p.name||'').slice(0,12), w=tw(name), h=12;
+    const cands=[[x+16,y-6],[x-w-16,y-6],[x-w/2,y-22],[x-w/2,y+12]];
+    for(const c of cands){
+      if(c[0]<2||c[0]+w>W-2||c[1]<2||c[1]+h>H-2) continue;
+      if(hit(c[0],c[1],w,h)) continue;
+      boxes.push([c[0],c[1],w,h]);
+      labels+='<text x="'+c[0].toFixed(1)+'" y="'+(c[1]+9.5).toFixed(1)+'" font-size="10.5" fill="#5f6c74">'+esc(name)+'</text>';
+      break;
+    }
+  });
+  const dots=xy.map((p,i)=>'<g><circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="11" fill="#cf6a39" stroke="#fff" stroke-width="2.5"/>'
+    +'<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+3.8).toFixed(1)+'" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">'+(i+1)+'</text></g>').join('');
+  let grid='';
+  for(let gx=0;gx<=W;gx+=60) grid+='<line x1="'+gx+'" y1="0" x2="'+gx+'" y2="'+H+'" stroke="#e7e3da" stroke-width="1"/>';
+  for(let gy=0;gy<=H;gy+=60) grid+='<line x1="0" y1="'+gy+'" x2="'+W+'" y2="'+gy+'" stroke="#e7e3da" stroke-width="1"/>';
+  return '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">'
+    + '<rect width="'+W+'" height="'+H+'" fill="#f3f1ea"/>'+grid+line+dots+labels+'</svg>';
 }
 function slot(cls,tag,txt){
   const empty = !txt.trim();
@@ -1015,7 +1367,10 @@ async function estimateWalks(i){
       }
     }
     const dm=document.getElementById('dayModal');
-    if(any && dm && dm.classList.contains('on')) openDay(i);
+    if(any){
+      if(dm && dm.classList.contains('on')) openDay(i);
+      else if(curTab==='itin' && itinMode==='day' && curDay===i) renderItin();
+    }
   }finally{ _estimating=false; }
 }
 
@@ -1026,6 +1381,8 @@ function stopEditorHtml(){
     <div class="se-item">
       <div class="se-row">
         <span class="idx">${i+1}</span>
+        <input style="flex:none;width:46px;text-align:center;font-size:17px" title="圖示（留空會自動依地點名判斷）"
+          placeholder="${stopIcon(s)}" value="${esc(s.icon||'')}" oninput="_edStops[${i}].icon=this.value">
         <input placeholder="地點名稱，例：羅浮宮" value="${esc(s.name||'')}" oninput="_edStops[${i}].name=this.value">
         <div class="se-tools">
           <button type="button" onclick="moveStop(${i},-1)" title="上移">▲</button>
@@ -1042,9 +1399,10 @@ function stopEditorHtml(){
       ${i>0?`<div class="se-mini">
         <div><label>怎麼來的（從上一站）</label><select onchange="setMoveMode(${i},this.value)">
           ${Object.keys(MOVE_LABEL).map(m=>`<option value="${m}" ${(s.moveMode||'transit')===m?'selected':''}>${MOVE_ICON[m]} ${MOVE_LABEL[m]}</option>`).join('')}
-        </select></div>
+        </select></div></div>
+      <div style="margin-bottom:8px">
         <div><label id="ml_${i}">${MOVE_ICON[s.moveMode||'transit']} ${MOVE_LABEL[s.moveMode||'transit']}・從上一站到這站</label>
-          <div style="display:flex;gap:6px;align-items:center">
+          <div class="se-mvrow">
             <input id="mv_${i}" placeholder="${MOVE_HINT[s.moveMode||'transit']}" value="${esc(s.move||'')}" oninput="_edStops[${i}].move=this.value" onpaste="movePaste(event,${i})">
             <button type="button" class="se-q" onclick="queryMove(${i})">🔎 查</button>
             <button type="button" class="se-q" onclick="pasteMove(${i})" title="把剪貼簿裡 Google 的時間貼進來">📋</button>
@@ -1059,7 +1417,7 @@ function stopEditorHtml(){
     <button type="button" class="btn ghost" onclick="addStop()">➕ 新增一站</button>`;
 }
 function refreshStopEditor(){ const el=document.getElementById('stopEditorWrap'); if(el) el.innerHTML=stopEditorHtml(); }
-function addStop(){ _edStops.push({name:'',q:'',time:'',move:'',moveMode:'transit',stay:'',desc:''}); refreshStopEditor(); }
+function addStop(){ _edStops.push({name:'',q:'',time:'',move:'',moveMode:'transit',stay:'',desc:'',icon:''}); refreshStopEditor(); }
 function delStop(i){ _edStops.splice(i,1); refreshStopEditor(); }
 function moveStop(i,dir){ const j=i+dir; if(j<0||j>=_edStops.length) return;
   const t=_edStops[i]; _edStops[i]=_edStops[j]; _edStops[j]=t; refreshStopEditor(); }
@@ -1219,7 +1577,8 @@ function saveDay(i){
     const name=(s.name||'').trim();
     let q=(s.q||'').trim(); if(!q) q = d.area? name+' '+d.area : name;
     return {name, q, time:(s.time||'').trim(), move:(s.move||'').trim(),
-      moveMode:s.moveMode||'transit', stay:(s.stay||'').trim(), desc:(s.desc||'').trim()};
+      moveMode:s.moveMode||'transit', stay:(s.stay||'').trim(), desc:(s.desc||'').trim(),
+      icon:(s.icon||'').trim()};
   });
   save(); renderAll(); openDay(i); toast('已儲存');
 }
@@ -1471,7 +1830,7 @@ function deleteDay(i){
   save(); renderAll(); closeModal('dayModal');
   toast('已刪除 Day '+(i+1)+'，整趟縮短 1 天');
 }
-function switchTrip(id){ activeId=id; save(); renderAll(); }
+function switchTrip(id){ activeId=id; curDay=defaultDay(); save(); renderAll(); }
 function delTrip(id){
   if(DB.trips.length<=1){ toast('至少保留一趟行程'); return; }
   const t=DB.trips.find(x=>x.id===id);
@@ -1616,9 +1975,17 @@ async function geoOne(s){
   }catch(e){}
   return null;
 }
+const _geoInflight={};
 async function geoFetch(q){
   const g=geoLoad();
   if(q in g) return g[q];
+  if(_geoInflight[q]) return _geoInflight[q];      // 地圖和通勤估算會同時查同一站，共用一次就好
+  _geoInflight[q]=_geoFetchOne(q).then(v=>{ delete _geoInflight[q]; return v; },
+                                       e=>{ delete _geoInflight[q]; throw e; });
+  return _geoInflight[q];
+}
+async function _geoFetchOne(q){
+  const g=geoLoad();
   const cm=(''+q).match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);  // 直接填經緯度
   if(cm){ g[q]={lat:+cm[1],lng:+cm[2]}; geoSave(); return g[q]; }
   let hit=null;
@@ -2632,6 +2999,7 @@ function delExpense(i){
 /* ---------- misc ---------- */
 function emptyState(em,t,s){ return `<div class="empty-state"><div class="em">${em}</div><div style="font-weight:800;font-size:17px;color:var(--ink)">${t}</div><div style="margin-top:6px">${s}</div></div>`; }
 function setTab(tab){
+  curTab=tab;
   document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
   ['itin','food','cost','check','split'].forEach(x=>document.getElementById('view-'+x).style.display = x===tab?'':'none');
   if(tab==='food')renderFood(); if(tab==='cost')renderCost(); if(tab==='check')renderCheck();

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#1b3a4b">
+<meta name="theme-color" content="#33472f">
 <title>旅遊行程系統</title>
 <style>
 :root{
@@ -183,7 +183,7 @@ header>.wrap{position:relative;z-index:1}
   border-radius:22px 22px 0 0;animation:up .28s cubic-bezier(.2,.9,.3,1)}
 @media(min-width:680px){.modal{align-items:center}.sheet{border-radius:22px}}
 @keyframes up{from{transform:translateY(60px);opacity:.6}to{transform:none;opacity:1}}
-.sheet-hd{position:sticky;top:0;background:linear-gradient(135deg,#1b3a4b,#2c6e7f);color:#fff;
+.sheet-hd{position:sticky;top:0;background:var(--hero);color:#fff;
   padding:18px 20px 16px;border-radius:22px 22px 0 0;z-index:2}
 .sheet-hd .close{position:absolute;right:14px;top:14px;width:34px;height:34px;border-radius:50%;
   background:rgba(255,255,255,.2);color:#fff;font-size:18px;display:grid;place-items:center}
@@ -264,8 +264,8 @@ header>.wrap{position:relative;z-index:1}
 .navb{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:800;
   padding:7px 12px;border-radius:9px;text-decoration:none;transition:.12s}
 .navb:active{transform:scale(.94)}
-.navb.walk{background:#e8f4ee;color:#1f7a4d}
-.navb.tran{background:#e8f0f8;color:#22557f}
+.navb.walk{background:#e7efe6;color:#3b6b45}
+.navb.tran{background:#eceee7;color:var(--brand)}
 .route .empty{color:var(--muted);font-size:13px}
 
 /* food */
@@ -280,7 +280,7 @@ header>.wrap{position:relative;z-index:1}
 .food-group .gh{font-size:15px;font-weight:800;margin:0 0 8px;display:flex;align-items:center;gap:7px;color:var(--brand)}
 .foodcard{display:flex;gap:12px;background:var(--surf);border-radius:16px;
   padding:13px 15px;box-shadow:var(--elev-sm);margin-bottom:10px;align-items:flex-start}
-.fc-cat{flex:none;font-size:12px;font-weight:800;color:var(--brand2);background:#eaf1f5;
+.fc-cat{flex:none;font-size:12px;font-weight:800;color:var(--brand2);background:#eef0e9;
   border-radius:9px;padding:7px 9px;white-space:nowrap;max-width:96px;text-align:center;line-height:1.3}
 .fc-main{flex:1;min-width:0}
 .fc-name{font-weight:800;font-size:15px}
@@ -291,7 +291,7 @@ header>.wrap{position:relative;z-index:1}
 .fc-actions{display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap}
 .fc-del{color:var(--muted);font-size:15px;padding:3px 6px;opacity:.55;margin-left:auto}
 .fc-edit{color:var(--muted);font-size:14px;padding:3px 6px;opacity:.7}
-.navb.walk2{background:#eef2f6;color:#42525c}
+.navb.walk2{background:#eceee7;color:#5a6450}
 .fm-meta{font-size:11.5px;font-weight:700;color:#b0870f;margin-top:1px}
 .foodmini{display:flex;align-items:center;gap:10px;background:#fff;border-radius:12px;
   padding:10px 12px;box-shadow:var(--shadow);margin-bottom:8px}
@@ -662,7 +662,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
     background:#111418; color:var(--ink); border-color:var(--line) }
   body.night .se-item{ background:#13161a }
   body.night .sheet{ background:var(--bg) }
-  body.night .sheet-hd{ background:linear-gradient(135deg,#1a1e25,#262c35) }
   body.night .modal{ background:rgba(0,0,0,.66) }
   body.night .chip2{ background:var(--surf); color:var(--muted) }
   /* 金色細線框住每一塊面板 */
@@ -1334,11 +1333,6 @@ function daySvg(pts){
   return '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">'
     + '<rect width="'+W+'" height="'+H+'" fill="'+MAPBG+'"/>'+grid+line+dots+labels+'</svg>';
 }
-function slot(cls,tag,txt){
-  const empty = !txt.trim();
-  return `<div class="slot ${cls} ${empty?'empty':''}"><span class="tag">${tag}</span>`+
-    `<span class="txt">${empty?'—':esc(txt.split('\n')[0])}</span></div>`;
-}
 function daySummary(d){
   const s=d.stops||[];
   if(!s.length) return '<div class="dc-stops" style="opacity:.55">點卡片編輯、新增站點</div>';
@@ -1804,41 +1798,6 @@ function routeSection(d){
   setTimeout(()=>estimateWalks(idx),60);
   return `<div class="routewrap"><h3>行程時間軸</h3>
     <div class="slist">${stopList(d,idx,true)}</div></div>`;
-}
-function routeSectionOld(d){
-  const s=d.stops||[];
-  if(!s.length){
-    return `<div class="routewrap"><h3>🧭 行程時間軸</h3>
-      <div class="empty">這天還沒設定站點，點下方「✏️ 編輯這天」新增。</div></div>`;
-  }
-  const idx=trip().days.indexOf(d);
-  const PERIOD={am:'🌅 上午',pm:'☀️ 下午',ev:'🌙 晚上'};
-  let lastP=null, items='';
-  s.forEach((st,i)=>{
-    let p=periodOf(st.time); if(p===null) p=lastP||'am';
-    if(p!==lastP){ items+=`<div class="tln-period p-${p}">${PERIOD[p]}</div>`; lastP=p; }
-    if(i>0){
-      const mode=st.moveMode||'transit';
-      const a=s[i-1].q||s[i-1].name, b=st.q||st.name;
-      let mv=st.move;
-      if(!mv && mode==='walk' && WALK[idx+':'+i]) mv='約 '+WALK[idx+':'+i]+' 分（步行估）';
-      if(!mv && mode==='drive' && DRIVE[idx+':'+i]) mv=driveText(DRIVE[idx+':'+i]);
-      items+=`<div class="tln-move"><span class="tln-move-pill">${MOVE_ICON[mode]||'🚆'} ${mv?esc(mv):(MOVE_LABEL[mode]||'交通')}</span>`+
-        `<a class="tln-move-q" href="${mapsUrl(a,b,MOVE_GMODE[mode]||'transit')}" target="_blank" rel="noopener">🔎 查交通</a></div>`;
-    }
-    const time = st.time? `<div class="tln-arrive"><span class="tln-time">🕓 ${esc(st.time)} 抵達</span></div>`:'';
-    const stay = st.stay? `<span class="tln-stay">⏱ 停留 ${esc(st.stay)}</span>`:'';
-    const map = `<a class="tln-map" href="${mapsSearch(st.q||st.name)}" target="_blank" rel="noopener">📍 地圖</a>`;
-    const badges = (stay||map)? `<div class="tln-badges">${stay}${map}</div>`:'';
-    const desc = st.desc? `<div class="tln-desc clip" onclick="this.classList.toggle('clip');this.nextElementSibling.textContent=this.classList.contains('clip')?'▾ 展開介紹':'▴ 收合';">${esc(st.desc)}</div>`+
-      `<span class="tln-more" onclick="var pp=this.previousElementSibling;pp.classList.toggle('clip');this.textContent=pp.classList.contains('clip')?'▾ 展開介紹':'▴ 收合';">▾ 展開介紹</span>`:'';
-    items+=`<div class="tln-stop${st.time?' hastime':''}"><span class="dotn"></span>`+
-      `<div class="tln-card">${time}<div class="tln-hd"><span class="tln-name">${esc(st.name)}</span></div>${badges}${desc}</div></div>`;
-  });
-  setTimeout(()=>estimateWalks(idx),60);
-  return `<div class="routewrap"><h3>🧭 行程時間軸</h3>
-    <div class="tln-legend"><span class="lg lg-move">通勤</span><span class="lg lg-stay">停留</span></div>
-    <div class="tln">${items}</div></div>`;
 }
 function openDay(i){
   const d=trip().days[i];

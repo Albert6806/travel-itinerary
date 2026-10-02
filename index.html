@@ -27,38 +27,57 @@ a{color:inherit}
 .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
 
 /* Header */
+/* Banner：深色、少裝飾。層次靠字級、字距和留白，不靠色塊 */
 header{
-  background:linear-gradient(135deg,#17414d 0%,#245f6b 55%,#2f7f86 100%);
-  color:#fff;padding:15px 0 17px;position:relative;overflow:hidden;
+  background:
+    radial-gradient(120% 95% at 82% -15%, rgba(255,255,255,.085), transparent 58%),
+    linear-gradient(165deg,#0c2831 0%,#133d48 46%,#1a5660 100%);
+  color:#fff;padding:13px 0 30px;position:relative;overflow:hidden;
 }
-header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;height:200px;
-  background:radial-gradient(circle,rgba(201,154,58,.35),transparent 70%);pointer-events:none}
-.htop{display:flex;align-items:center;gap:10px;justify-content:space-between;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:15px;letter-spacing:.5px;opacity:.92}
-.brand .logo{width:30px;height:30px;border-radius:9px;background:rgba(255,255,255,.16);
-  display:grid;place-items:center;font-size:17px}
-.tripsel{display:flex;align-items:center;gap:8px}
+header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:130px;
+  background:linear-gradient(to top,rgba(0,0,0,.16),transparent);pointer-events:none}
+header>.wrap{position:relative;z-index:1}
+.htop{display:flex;align-items:center;justify-content:flex-end}
+.tripsel{display:flex;align-items:center;gap:6px}
 .tripsel select{
-  background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.25);
-  border-radius:10px;padding:7px 10px;font-size:14px;font-weight:600;max-width:190px}
+  appearance:none;-webkit-appearance:none;
+  background:transparent;color:#fff;border:1px solid rgba(255,255,255,.22);
+  border-radius:999px;padding:6px 26px 6px 13px;font-size:11.5px;font-weight:600;
+  letter-spacing:.06em;max-width:168px;opacity:.85;cursor:pointer;
+  background-image:linear-gradient(45deg,transparent 50%,rgba(255,255,255,.75) 50%),
+                   linear-gradient(135deg,rgba(255,255,255,.75) 50%,transparent 50%);
+  background-position:calc(100% - 14px) 50%, calc(100% - 9px) 50%;
+  background-size:5px 5px, 5px 5px; background-repeat:no-repeat;
+}
+.tripsel select:hover{opacity:1;background-color:rgba(255,255,255,.1)}
 .tripsel select option{color:#22303a}
-.iconbtn{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.14);
-  color:#fff;display:grid;place-items:center;font-size:17px;border:1px solid rgba(255,255,255,.2)}
+.iconbtn{width:29px;height:29px;border-radius:50%;background:transparent;
+  color:#fff;display:grid;place-items:center;font-size:13px;opacity:.8;
+  border:1px solid rgba(255,255,255,.22)}
+.iconbtn:hover{opacity:1;background:rgba(255,255,255,.12)}
 .iconbtn:active{transform:scale(.94)}
-.htitle{margin-top:14px}
-.htitle h1{margin:0;font-size:24px;font-weight:800;letter-spacing:.2px}
-.htitle .sub{opacity:.85;font-size:14px;margin-top:2px}
-.hmeta{display:flex;gap:8px;margin-top:11px;flex-wrap:wrap;font-size:12.5px}
-.hmeta .chip{background:rgba(255,255,255,.13);padding:5px 11px;border-radius:999px;
-  display:flex;align-items:center;gap:5px;font-weight:600}
+.htitle{margin-top:26px}
+/* 字距拉開是高級感最有效的一招，中文尤其明顯 */
+.eyebrow{font-size:10.5px;font-weight:600;letter-spacing:.26em;opacity:.55}
+.htitle h1{margin:8px 0 0;font-size:clamp(27px,4.4vw,41px);font-weight:700;
+  letter-spacing:.07em;line-height:1.2}
+.htitle .sub{opacity:.62;font-size:13px;margin-top:9px;letter-spacing:.05em;font-weight:400}
+.hmeta{display:flex;align-items:center;gap:9px;margin-top:17px;flex-wrap:wrap;
+  font-size:12px;font-weight:500;letter-spacing:.06em;opacity:.78}
+.hmeta i{font-style:normal;opacity:.3}
 
 /* Tabs */
 .tabs{display:flex;gap:4px;margin:14px 0 4px;background:#fff;padding:5px;border-radius:16px;
   box-shadow:var(--shadow);position:sticky;top:8px;z-index:20}
-.tabs button{flex:1;padding:10px 6px;border-radius:12px;font-weight:700;font-size:14px;
-  color:var(--muted);transition:.15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.tabs button{flex:1;padding:11px 6px;border-radius:12px;font-weight:700;font-size:13.5px;
+  letter-spacing:.14em;color:var(--muted);transition:.15s;
+  display:flex;align-items:center;justify-content:center}
 .tabs button.on{background:var(--brand);color:#fff}
 .tabs .em{font-size:16px}
+@media(min-width:680px){
+  .tabs{justify-content:center}
+  .tabs button{flex:0 0 auto;padding:11px 30px}
+}
 
 /* Section */
 .view{padding:16px 0 30px;animation:fade .25s ease}
@@ -120,7 +139,8 @@ header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;hei
   padding:9px 14px;border-radius:11px;font-weight:700;font-size:13.5px;text-decoration:none;margin-top:8px}
 .linkbtn:active{transform:scale(.96)}
 .editbtn{background:var(--card);border:1px solid var(--line);color:var(--brand);
-  padding:9px 14px;border-radius:11px;font-weight:700;font-size:13.5px;margin-top:8px}
+  padding:9px 16px;border-radius:999px;font-weight:700;font-size:12.5px;
+  letter-spacing:.1em;margin-top:8px}
 
 /* Cost view */
 .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
@@ -235,15 +255,15 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
 <header>
   <div class="wrap">
     <div class="htop">
-      <div class="brand"><span class="logo">🧭</span> 旅遊行程系統</div>
       <div class="tripsel">
-        <button id="editToggle" onclick="toggleEdit()">🔒 檢視模式</button>
-        <button id="pdfBtn" onclick="exportPDF()" title="匯出 PDF：列印視窗請選「儲存為 PDF」">📄 PDF</button>
-        <select id="tripSelect" onchange="switchTrip(this.value)"></select>
-        <button class="iconbtn" title="行程管理" onclick="openManage()">⚙️</button>
+        <button id="editToggle" onclick="toggleEdit()" title="進入編輯模式">檢視模式</button>
+        <button id="pdfBtn" onclick="exportPDF()" title="匯出 PDF：列印視窗請選「儲存為 PDF」">PDF</button>
+        <select id="tripSelect" class="editonly" onchange="switchTrip(this.value)"></select>
+        <button class="iconbtn" title="行程管理" onclick="openManage()">⚙</button>
       </div>
     </div>
     <div class="htitle">
+      <div class="eyebrow" id="hRange"></div>
       <h1 id="hName">—</h1>
       <div class="sub" id="hSub"></div>
     </div>
@@ -253,11 +273,11 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
 
 <div class="wrap">
   <div class="tabs">
-    <button class="on" data-tab="itin" onclick="setTab('itin')"><span class="em">🗓️</span>行程</button>
-    <button data-tab="food" onclick="setTab('food')"><span class="em">🍽️</span>美食</button>
-    <button data-tab="cost" onclick="setTab('cost')"><span class="em">💰</span>費用</button>
-    <button data-tab="check" onclick="setTab('check')"><span class="em">✅</span>清單</button>
-    <button data-tab="split" onclick="setTab('split')"><span class="em">💰</span>分帳</button>
+    <button class="on" data-tab="itin" onclick="setTab('itin')">行程</button>
+    <button data-tab="food" onclick="setTab('food')">美食</button>
+    <button data-tab="cost" onclick="setTab('cost')">費用</button>
+    <button data-tab="check" onclick="setTab('check')">清單</button>
+    <button data-tab="split" onclick="setTab('split')">分帳</button>
   </div>
 
   <div id="view-itin" class="view"></div>
@@ -295,11 +315,12 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   body.ro .fc-del,
   body.ro .del, body.ro .prib{ display:none !important; }
   /* 右上角編輯開關 */
-  #editToggle{ cursor:pointer; border:1px solid rgba(255,255,255,.55); background:rgba(255,255,255,.12);
-    color:#fff; font:inherit; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px;
-    white-space:nowrap; }
-  #editToggle:hover{ background:rgba(255,255,255,.22); }
-  #editToggle.editing{ background:#c8622d; border-color:#c8622d; }
+  #editToggle{ cursor:pointer; border:1px solid rgba(255,255,255,.22); background:transparent;
+    color:#fff; font:inherit; font-size:11.5px; font-weight:600; letter-spacing:.06em;
+    padding:6px 13px; border-radius:999px; white-space:nowrap; opacity:.8; }
+  #editToggle:hover{ background:rgba(255,255,255,.12); opacity:1; }
+  #editToggle.editing{ border-color:rgba(236,156,110,.8); color:#f2c3a5;
+    background:rgba(207,106,57,.16); opacity:1; }
 
   /* ===== 行程時間軸 ===== */
   .tln-legend{ display:flex; gap:16px; margin:2px 0 14px; font-size:12px; color:var(--muted); }
@@ -412,6 +433,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .txrow{ display:flex; align-items:center; gap:8px; background:#faf7f2; border:1px solid var(--line);
     border-radius:10px; padding:10px 13px; margin-bottom:7px; font-size:14.5px; }
   .txrow .amt{ margin-left:auto; font-weight:800; color:var(--accent); }
+  /* 檢視模式只看得到主行程：行程選單、⚙️ 都藏起來
+     （主行程＝Albert 在編輯模式最後選的那個，activeId 跟著雲端同步） */
   body.ro .editonly{ display:none !important; }
   /* 分帳不受檢視模式限制：同行的人要能自己記帳、刪自己記錯的那筆 */
   body.ro #view-split .del, body.ro #view-split .mdel, body.ro #view-split .ex-edit{ display:inline-block !important; }
@@ -522,9 +545,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   body.ro .fab{ display:none !important; }
 
   /* ===== 匯出 PDF ===== */
-  #pdfBtn{ cursor:pointer; border:1px solid rgba(255,255,255,.55); background:rgba(255,255,255,.12);
-    color:#fff; font:inherit; font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px; white-space:nowrap; }
-  #pdfBtn:hover{ background:rgba(255,255,255,.22); }
+  #pdfBtn{ cursor:pointer; border:1px solid rgba(255,255,255,.22); background:transparent;
+    color:#fff; font:inherit; font-size:11.5px; font-weight:600; letter-spacing:.06em;
+    padding:6px 13px; border-radius:999px; white-space:nowrap; opacity:.8; }
+  #pdfBtn:hover{ background:rgba(255,255,255,.12); opacity:1; }
   #printArea{ display:none; }
 
   @media print{
@@ -674,7 +698,9 @@ function setEdit(on){
   EDIT = on;
   document.body.classList.toggle('ro', !on);
   const b = document.getElementById('editToggle');
-  if(b){ b.textContent = on ? '✏️ 編輯中（點此結束）' : '🔒 檢視模式'; b.classList.toggle('editing', on); }
+  if(b){ b.textContent = on ? '編輯中' : '檢視模式';
+         b.title = on ? '點此結束編輯' : '進入編輯模式';
+         b.classList.toggle('editing', on); }
 }
 function toggleEdit(){
   if(EDIT){ setEdit(false); toast('已切回檢視模式'); return; }
@@ -777,14 +803,24 @@ function slug(){ return 'trip-'+Math.abs(Date.now()).toString(36)+'-'+(DB.trips.
 function renderHeader(){
   const t=trip();
   document.getElementById('hName').textContent=t.name;
-  document.getElementById('hSub').textContent=t.subtitle||'';
-  const dr = t.days.length ? fmtDate(t.days[0].date)+' – '+fmtDate(t.days[t.days.length-1].date) : '';
-  const total = t.days.reduce((a,d)=>a+(d.price||0),0) + (t.todos||[]).reduce((a,x)=>a+(Number(x.cost)||0),0);
-  document.getElementById('hMeta').innerHTML=
-    `<span class="chip">📆 ${t.days.length} 天</span>`+
-    `<span class="chip">👥 ${t.people} 人</span>`+
-    `<span class="chip">🧾 ${t.currency} ${money(total)}</span>`+
-    (dr?`<span class="chip">🗺️ ${dr}</span>`:'');
+  const sub=document.getElementById('hSub');
+  sub.textContent=t.subtitle||''; sub.style.display=t.subtitle?'':'none';
+  const n=t.days.length, a=n? t.days[0].date:'', b=n? t.days[n-1].date:'';
+  const md=s=>{ const d=new Date(s+'T00:00:00'); return (d.getMonth()+1)+'.'+String(d.getDate()).padStart(2,'0'); };
+  document.getElementById('hRange').textContent =
+    n? (new Date(a+'T00:00:00').getFullYear()+'　·　'+md(a)+' – '+md(b)) : '';
+  const total = t.days.reduce((x,d)=>x+(d.price||0),0) + (t.todos||[]).reduce((x,y)=>x+(Number(y.cost)||0),0);
+  const bits=[];
+  if(n) bits.push(n+' 天');
+  bits.push(t.people+' 人');
+  bits.push(t.currency+' '+money(total));
+  if(n){                                   // 出發倒數：旅遊感比資訊感重要
+    const k=diffDays(isoToday(), a);
+    if(k>0) bits.push('還有 '+k+' 天');
+    else if(k===0) bits.push('今天出發');
+    else if(diffDays(isoToday(), b)>=0) bits.push('旅程進行中');
+  }
+  document.getElementById('hMeta').innerHTML=bits.map(x=>'<span>'+esc(x)+'</span>').join('<i>·</i>');
   const sel=document.getElementById('tripSelect');
   sel.innerHTML=DB.trips.map(x=>`<option value="${x.id}" ${x.id===activeId?'selected':''}>${esc(x.name)}</option>`).join('');
 }
@@ -860,7 +896,7 @@ function dayHead(d,i){
     + '<div class="dh-date">'+fmtFull(d.date)+'・第 '+(i+1)+' 天</div>'
     + '<div class="dh-title">'+esc(d.title||'行程')+'</div>'
     + (bits.length? '<div class="dh-sub">'+bits.map(b=>'<span>'+b+'</span>').join('')+'</div>':'')
-    + '</div><button class="editbtn" onclick="openDay('+i+')">✏️ 這天</button></div>';
+    + '</div><button class="editbtn" onclick="openDay('+i+')">編輯</button></div>';
 }
 
 /* 站點圖示：沒指定就從地點名稱猜一個 */

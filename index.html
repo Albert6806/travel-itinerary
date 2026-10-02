@@ -90,7 +90,7 @@ header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;hei
 
 /* Modal */
 .modal{position:fixed;inset:0;background:rgba(20,30,38,.55);backdrop-filter:blur(3px);
-  display:none;align-items:flex-end;justify-content:center;z-index:100}
+  display:none;align-items:flex-end;justify-content:center;z-index:1000}
 .modal.on{display:flex}
 .sheet{background:var(--bg);width:100%;max-width:640px;max-height:92vh;overflow-y:auto;
   border-radius:22px 22px 0 0;animation:up .28s cubic-bezier(.2,.9,.3,1)}
@@ -227,7 +227,7 @@ header::after{content:"";position:absolute;right:-40px;top:-30px;width:200px;hei
 footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
   background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;
-  opacity:0;transition:.3s;z-index:200;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+  opacity:0;transition:.3s;z-index:2000;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.3)}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
@@ -425,7 +425,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .vmode button.on{ background:var(--ink); color:#fff; }
 
   /* 當天地圖 */
-  .dmap{ position:relative; border-radius:18px; overflow:hidden; background:#eceae4;
+  /* z-index:0 很重要：Leaflet 內部圖層是 z-index 400、控制項 800，
+     不建立堆疊脈絡的話會蓋過對話框(100)和置頂的分頁標籤(20) */
+  .dmap{ position:relative; z-index:0; border-radius:18px; overflow:hidden; background:#eceae4;
     height:210px; margin-bottom:12px; box-shadow:var(--shadow); }
   @media(min-width:680px){ .dmap{ height:280px; } }
   .dmap-in{ position:absolute; inset:0; }

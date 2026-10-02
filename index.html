@@ -151,28 +151,29 @@ header>.wrap{position:relative;z-index:1}
 @keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 
 /* Day cards */
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px}
 .daycard{background:var(--surf);border-radius:var(--radius);box-shadow:var(--elev);
   overflow:hidden;cursor:pointer;transition:.18s;display:flex;flex-direction:column}
 .daycard:active{transform:scale(.985)}
 .daycard:hover{box-shadow:var(--shadow2)}
-.dc-top{padding:14px 16px 10px;background:linear-gradient(120deg,#fbf8f1,#fff);position:relative}
-.dc-daynum{position:absolute;right:14px;top:12px;font-size:12px;font-weight:800;color:#fff;
-  background:var(--brand2);border-radius:8px;padding:3px 9px}
-.dc-date{font-size:13px;color:var(--muted);font-weight:600}
-.dc-title{font-size:17px;font-weight:800;margin-top:3px;line-height:1.35;padding-right:52px}
-.dc-body{padding:6px 16px 12px;flex:1;display:flex;flex-direction:column;gap:7px}
+.daycard{padding:16px 17px 14px}
+.dc-hd{display:flex;align-items:center;gap:10px}
+.dc-daynum{margin-left:auto;font-size:10px;font-weight:800;letter-spacing:.12em;color:#fff;
+  background:var(--brand);border-radius:999px;padding:3px 11px;flex:none}
+.dc-date{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.dc-title{font-size:16.5px;font-weight:800;margin-top:6px;line-height:1.38;color:var(--ink)}
 .slot{display:flex;gap:9px;align-items:flex-start;font-size:13px}
 .slot .tag{flex:none;width:42px;text-align:center;font-weight:800;font-size:11px;color:#fff;
   border-radius:6px;padding:3px 0;margin-top:1px}
 .slot.am .tag{background:var(--am)} .slot.pm .tag{background:var(--pm)} .slot.ev .tag{background:var(--ev)}
 .slot .txt{color:#41525c;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .slot.empty{opacity:.4}
-.dc-foot{border-top:1px dashed var(--line);padding:10px 16px;display:flex;
-  justify-content:space-between;align-items:center;gap:8px;background:#fcfbf7}
-.dc-lodge{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:5px;
-  overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.dc-price{font-size:13px;font-weight:800;color:var(--accent);white-space:nowrap}
+.dc-foot{margin-top:auto;padding-top:11px;border-top:1px solid var(--line);display:flex;
+  justify-content:space-between;align-items:center;gap:10px}
+.dc-lodge{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;min-width:0}
+.dc-price{font-size:13px;font-weight:800;color:var(--accent);white-space:nowrap;flex:none}
+.dc-price.none{color:var(--muted);font-weight:600}
 
 /* Modal */
 .modal{position:fixed;inset:0;background:rgba(20,30,38,.55);backdrop-filter:blur(3px);
@@ -476,7 +477,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .amrow{ display:flex; flex-wrap:wrap; gap:6px; margin-top:7px; }
   .amtag{ font-size:11px; font-weight:700; color:#256b52; background:#e2f0e8; border:1px solid #bbdfcb; padding:2px 9px; border-radius:999px; }
   .chkcost{ width:82px; flex:none; text-align:right; font-size:13px; padding:5px 8px; }
-  .dc-stops{ font-size:12.5px; color:var(--muted); line-height:1.7; padding:4px 0 2px; }
+  .dc-stops{ font-size:12.5px; color:var(--muted); line-height:1.7; margin-top:9px;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
   .close{ cursor:pointer; }
 
   /* ===== 分帳 ===== */
@@ -674,8 +676,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   body.night .checkhd h3, body.night .food-group .gh, body.night .dc-title,
   body.night .sheet-hd h2, body.night .info-box .v, body.night .tln-name,
   body.night .netrow .nm, body.night .exprow .ed{ color:var(--brand) }
-  body.night .eyebrow, body.night .speriod, body.night .side-k,
-  body.night .dc-daynum{ color:var(--brand2) }
+  body.night .eyebrow, body.night .speriod, body.night .side-k{ color:var(--brand2) }
+  body.night .dc-daynum{ background:var(--gold); color:var(--gold-ink) }
   body.night .hmeta{ color:#cbbb95 }
   body.night .s-desc{ color:#9a9183 }
   body.night .s-time{ color:var(--accent) }
@@ -1338,14 +1340,12 @@ function daySummary(d){
   return `<div class="dc-stops">📍 ${s.length} 站　${names}${s.length>4?' …':''}</div>`;
 }
 function dayCard(d,i){
-  const price = d.price!=null ? `<span class="dc-price">$${money(d.price)}</span>`:'<span class="dc-price" style="color:var(--muted);font-weight:600">—</span>';
+  const price = d.price!=null ? `<span class="dc-price">${trip().currency} ${money(d.price)}</span>`
+                              : '<span class="dc-price none">—</span>';
   return `<div class="daycard" onclick="openDay(${i})">
-    <div class="dc-top">
-      <span class="dc-daynum">Day ${i+1}</span>
-      <div class="dc-date">${fmtDate(d.date)}</div>
-      <div class="dc-title">${esc(d.title||'行程')}</div>
-    </div>
-    <div class="dc-body">${daySummary(d)}</div>
+    <div class="dc-hd"><span class="dc-date">${fmtDate(d.date)}</span><span class="dc-daynum">D${i+1}</span></div>
+    <div class="dc-title">${esc(d.title||'行程')}</div>
+    ${daySummary(d)}
     <div class="dc-foot">
       <span class="dc-lodge">${d.lodging?('🏨 '+esc(d.lodging)):'<span style=\"opacity:.5\">無住宿</span>'}</span>
       ${price}

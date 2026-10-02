@@ -16,6 +16,28 @@
   --shadow:0 2px 12px rgba(90,75,45,.07);
   --shadow2:0 12px 34px rgba(90,75,45,.13);
   --radius:22px;
+  /* 立體感：表面上淺下深的微漸層 + 內側高光 + 近距離接觸陰影 + 遠距離柔影 */
+  --surf:linear-gradient(180deg,#fffefb 0%,#fdf9f0 100%);
+  --elev:inset 0 1px 0 rgba(255,255,255,.95), inset 0 -1px 0 rgba(150,125,80,.07),
+         0 1px 2px rgba(120,100,60,.09), 0 12px 24px -10px rgba(120,100,60,.22);
+  --elev-sm:inset 0 1px 0 rgba(255,255,255,.9),
+         0 1px 2px rgba(120,100,60,.08), 0 6px 14px -7px rgba(120,100,60,.2);
+  --gold:linear-gradient(180deg,#dcc083 0%,#c2a05c 100%);
+  --gold-ink:#1b1711;
+}
+/* ===== 夜色主題（黑底金） ===== */
+body.night{
+  --bg:#0b0d10; --card:#171a1f; --ink:#ebe6db; --muted:#8b8780;
+  --line:#272b32; --brand:#dcc083; --brand2:#c2a469; --accent:#d9ac5f;
+  --side:#13161a; --side-ink:#e8e1d2; --ok:#6fae7e;
+  --hero:linear-gradient(162deg,#12151a 0%,#1a1e25 55%,#242a33 100%);
+  --surf:linear-gradient(180deg,#1c2026 0%,#15181d 100%);
+  --elev:inset 0 1px 0 rgba(255,255,255,.065), inset 0 -1px 0 rgba(0,0,0,.65),
+         0 2px 5px rgba(0,0,0,.5), 0 18px 34px -14px rgba(0,0,0,.85);
+  --elev-sm:inset 0 1px 0 rgba(255,255,255,.06),
+         0 2px 4px rgba(0,0,0,.45), 0 9px 18px -9px rgba(0,0,0,.7);
+  --shadow:0 2px 12px rgba(0,0,0,.45);
+  --shadow2:0 14px 34px rgba(0,0,0,.6);
 }
 /* B 版：保留原本的深青，只換暖底（body.alt 切換，用來比較） */
 body.alt{
@@ -98,7 +120,7 @@ header>.wrap{position:relative;z-index:1}
 @media(min-width:900px){
   .app{display:flex;align-items:flex-start;gap:22px;max-width:1340px;margin:0 auto;padding:18px 24px 0}
   .side{position:sticky;top:18px;flex:0 0 220px;background:var(--side);color:var(--side-ink);
-    border-radius:26px;padding:24px 14px 18px;box-shadow:var(--shadow2)}
+    border-radius:26px;padding:24px 14px 18px;box-shadow:var(--elev)}
   .side .side-hd{display:block;padding:0 12px 20px}
   .side-k{font-size:9.5px;letter-spacing:.24em;opacity:.5;font-weight:700}
   .side-v{font-size:17px;font-weight:800;margin-top:8px;letter-spacing:.05em;line-height:1.35}
@@ -114,7 +136,7 @@ header>.wrap{position:relative;z-index:1}
   .tabs button.on{background:var(--card);color:var(--brand)}
   .main{flex:1;min-width:0}
   .main > .wrap{max-width:none;padding:0 30px}
-  header{border-radius:26px;padding:20px 0 30px}
+  header{border-radius:26px;padding:20px 0 30px;box-shadow:var(--elev)}
   header > .wrap{max-width:none;padding:0 30px}
   body{padding-bottom:30px}
   .main > footer{display:none}
@@ -128,7 +150,7 @@ header>.wrap{position:relative;z-index:1}
 
 /* Day cards */
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.daycard{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+.daycard{background:var(--surf);border-radius:var(--radius);box-shadow:var(--elev);
   overflow:hidden;cursor:pointer;transition:.18s;display:flex;flex-direction:column}
 .daycard:active{transform:scale(.985)}
 .daycard:hover{box-shadow:var(--shadow2)}
@@ -181,15 +203,16 @@ header>.wrap{position:relative;z-index:1}
 .linkbtn{display:inline-flex;align-items:center;gap:7px;background:var(--brand2);color:#fff;
   padding:9px 14px;border-radius:11px;font-weight:700;font-size:13.5px;text-decoration:none;margin-top:8px}
 .linkbtn:active{transform:scale(.96)}
-.editbtn{background:var(--card);border:1px solid var(--line);color:var(--brand);
+.editbtn{background:var(--surf);border:none;color:var(--brand);box-shadow:var(--elev-sm);
   padding:9px 16px;border-radius:999px;font-weight:700;font-size:12.5px;
   letter-spacing:.1em;margin-top:8px}
+.editbtn:active{transform:translateY(1px)}
 
 /* Cost view */
-.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+.card{background:var(--surf);border-radius:var(--radius);box-shadow:var(--elev);
   padding:18px;margin-bottom:14px}
 .bigstat{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-.stat{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+.stat{background:var(--surf);border-radius:var(--radius);box-shadow:var(--elev);padding:16px}
 .stat .k{font-size:12.5px;color:var(--muted);font-weight:700}
 .stat .v{font-size:26px;font-weight:800;margin-top:3px;color:var(--brand)}
 .stat .v.accent{color:var(--accent)}
@@ -251,8 +274,8 @@ header>.wrap{position:relative;z-index:1}
 .locbtn:active{transform:scale(.95)}
 .food-group{margin-bottom:18px}
 .food-group .gh{font-size:15px;font-weight:800;margin:0 0 8px;display:flex;align-items:center;gap:7px;color:var(--brand)}
-.foodcard{display:flex;gap:12px;background:var(--card);border-radius:16px;
-  padding:13px 15px;box-shadow:var(--shadow);margin-bottom:10px;align-items:flex-start}
+.foodcard{display:flex;gap:12px;background:var(--surf);border-radius:16px;
+  padding:13px 15px;box-shadow:var(--elev-sm);margin-bottom:10px;align-items:flex-start}
 .fc-cat{flex:none;font-size:12px;font-weight:800;color:var(--brand2);background:#eaf1f5;
   border-radius:9px;padding:7px 9px;white-space:nowrap;max-width:96px;text-align:center;line-height:1.3}
 .fc-main{flex:1;min-width:0}
@@ -275,7 +298,9 @@ header>.wrap{position:relative;z-index:1}
 .fm-btn{flex:none}
 
 /* generic buttons / forms */
-.btn{background:var(--brand);color:#fff;padding:11px 16px;border-radius:12px;font-weight:700;font-size:14px}
+.btn{background:var(--brand);color:#fff;padding:11px 16px;border-radius:12px;font-weight:700;font-size:14px;
+  box-shadow:var(--elev-sm)}
+.btn:active{transform:translateY(1px)}
 .btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--line)}
 .btn.danger{background:#fff;color:#c0392b;border:1px solid #edd}
 .btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
@@ -320,7 +345,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
         <button id="editToggle" onclick="toggleEdit()" title="進入編輯模式">檢視模式</button>
         <button id="pdfBtn" onclick="exportPDF()" title="匯出 PDF：列印視窗請選「儲存為 PDF」">PDF</button>
         <select id="tripSelect" class="editonly" onchange="switchTrip(this.value)"></select>
-        <button class="iconbtn" title="行程管理" onclick="openManage()">⚙</button>
+        <button class="iconbtn themebtn" id="themeBtn" title="切換配色（暖色／夜色）" onclick="toggleTheme()">☾</button>
+        <button class="iconbtn editonly" title="行程管理" onclick="openManage()">⚙</button>
       </div>
     </div>
     <div class="htitle">
@@ -491,6 +517,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   /* 檢視模式只看得到主行程：行程選單、⚙️ 都藏起來
      （主行程＝Albert 在編輯模式最後選的那個，activeId 跟著雲端同步） */
   body.ro .editonly{ display:none !important; }
+  body.ro .themebtn{ display:grid !important; }   /* 配色是個人偏好，檢視的人也能換 */
   /* 分帳不受檢視模式限制：同行的人要能自己記帳、刪自己記錯的那筆 */
   body.ro #view-split .del, body.ro #view-split .mdel, body.ro #view-split .ex-edit{ display:inline-block !important; }
 
@@ -498,15 +525,15 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   /* ===== 每日檢視（行程頁新版面） ===== */
   /* 單日／總覽切換 */
   .vmode{ display:flex; gap:6px; margin:0 0 12px; }
-  .vmode button{ font-size:12.5px; font-weight:700; color:var(--muted); background:#fff;
-    border-radius:999px; padding:6px 15px; box-shadow:var(--shadow); }
+  .vmode button{ font-size:12.5px; font-weight:700; color:var(--muted); background:var(--surf);
+    border-radius:999px; padding:6px 15px; box-shadow:var(--elev-sm); }
   .vmode button.on{ background:var(--ink); color:#fff; }
 
   /* 當天地圖 */
   /* z-index:0 很重要：Leaflet 內部圖層是 z-index 400、控制項 800，
      不建立堆疊脈絡的話會蓋過對話框(100)和置頂的分頁標籤(20) */
-  .dmap{ position:relative; z-index:0; border-radius:18px; overflow:hidden; background:#eceae4;
-    height:210px; margin-bottom:12px; box-shadow:var(--shadow); }
+  .dmap{ position:relative; z-index:0; border-radius:18px; overflow:hidden; background:var(--card);
+    height:210px; margin-bottom:12px; box-shadow:var(--elev); }
   @media(min-width:680px){ .dmap{ height:280px; } }
   .dmap-in{ position:absolute; inset:0; }
   .dmap #dayMapBox{ width:100%; height:100%; }
@@ -529,8 +556,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .dstrip{ display:flex; gap:7px; overflow-x:auto; padding:2px 2px 12px;
     scrollbar-width:none; -webkit-overflow-scrolling:touch; }
   .dstrip::-webkit-scrollbar{ display:none; }
-  .dchip{ flex:none; min-width:60px; text-align:center; background:#fff; border-radius:14px;
-    padding:8px 11px; cursor:pointer; transition:.15s; box-shadow:var(--shadow); }
+  .dchip{ flex:none; min-width:60px; text-align:center; background:var(--surf); border-radius:14px;
+    padding:8px 11px; cursor:pointer; transition:.15s; box-shadow:var(--elev-sm); }
   .dchip:active{ transform:scale(.95); }
   .dchip .dd{ font-size:11px; color:var(--muted); font-weight:700; white-space:nowrap; }
   .dchip .dn{ font-size:16px; font-weight:800; color:var(--ink); margin-top:1px; letter-spacing:.3px; }
@@ -540,8 +567,8 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .dchip.today .dn::after{ content:""; display:inline-block; width:5px; height:5px; border-radius:50%;
     background:var(--accent); vertical-align:middle; margin-left:4px; }
 
-  .panel{ background:var(--card); border-radius:22px; padding:18px 18px 22px;
-    box-shadow:var(--shadow); margin-top:6px; }
+  .panel{ background:var(--surf); border-radius:22px; padding:18px 18px 22px;
+    box-shadow:var(--elev); margin-top:6px; }
   @media(min-width:900px){ .panel{ padding:24px 26px 28px; } }
   /* 當天抬頭 */
   .dhead{ display:flex; align-items:flex-start; gap:12px; margin:2px 0 6px; }
@@ -560,8 +587,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .speriod:first-child{ margin-top:4px; }
   .srow{ display:flex; gap:13px; padding:14px 0 12px; cursor:pointer; }
   .srow:active{ opacity:.55; }
-  .s-ic{ flex:none; width:42px; height:42px; border-radius:13px; background:#f1eee8;
-    display:grid; place-items:center; font-size:20px; position:relative; }
+  .s-ic{ flex:none; width:42px; height:42px; border-radius:13px; background:var(--surf);
+    display:grid; place-items:center; font-size:20px; position:relative;
+    box-shadow:var(--elev-sm); }
   .s-n{ position:absolute; left:-5px; top:-5px; width:19px; height:19px; border-radius:50%;
     background:var(--brand); color:#fff; font-size:10.5px; font-weight:800;
     display:grid; place-items:center; border:2px solid var(--bg); }
@@ -601,6 +629,55 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
     display:grid; place-items:center; z-index:60; box-shadow:0 7px 22px rgba(207,106,57,.42); }
   .fab:active{ transform:scale(.92); }
   body.ro .fab{ display:none !important; }
+
+  /* ===== 夜色主題：金色的互動元素、深色的輸入與彈窗 ===== */
+  body.night header{ background:
+    radial-gradient(120% 95% at 82% -15%, rgba(217,172,95,.12), transparent 58%), var(--hero); }
+  body.night::before{ opacity:.25 }
+  body.night .tabs{ background:var(--surf); box-shadow:0 -5px 22px rgba(0,0,0,.5) }
+  body.night .tabs button.on{ color:var(--brand) }
+  body.night .dchip.on,
+  body.night .vmode button.on,
+  body.night .chip2.on,
+  body.night .locbtn,
+  body.night .btn,
+  body.night .fab,
+  body.night .toast,
+  body.night .s-n{ background:var(--gold); color:var(--gold-ink) }
+  body.night .dchip.on .dd{ color:rgba(27,23,17,.62) }
+  body.night .dchip.on .dn{ color:var(--gold-ink) }
+  body.night .dchip.on{ box-shadow:0 4px 16px rgba(200,165,95,.28) }
+  body.night .fab{ box-shadow:0 8px 24px rgba(190,155,85,.3) }
+  body.night .s-n{ border-color:var(--bg) }
+  body.night .btn.ghost{ background:var(--surf); color:var(--brand); border-color:var(--line) }
+  body.night .btn.danger{ background:var(--surf); color:#e4907d; border-color:#3c2b27 }
+  body.night .field input, body.night .field textarea,
+  body.night .addrow input, body.night .raterow input,
+  body.night .chkcost, body.night .se-q, body.night .se-tools button{
+    background:#111418; color:var(--ink); border-color:var(--line) }
+  body.night .se-item{ background:#13161a }
+  body.night .sheet{ background:var(--bg) }
+  body.night .sheet-hd{ background:linear-gradient(135deg,#1a1e25,#262c35) }
+  body.night .modal{ background:rgba(0,0,0,.66) }
+  body.night .chip2{ background:var(--surf); color:var(--muted) }
+  body.night .leaflet-container{ background:#15181d }
+  body.night .dmap-tog{ background:rgba(28,32,38,.95); color:var(--brand);
+    box-shadow:0 2px 10px rgba(0,0,0,.6) }
+  body.night .dmap-prog{ color:#8b8780 }
+  body.night .mkr{ background:var(--accent); color:#17140e; border-color:#12151a }
+  body.night .mkr.ho{ background:#1b1f25; color:var(--brand); border-color:var(--brand) }
+  body.night .progress i{ background:linear-gradient(90deg,#c2a469,#dcc083) }
+  body.night .mvrow{ border-left-color:#30353d }
+  body.night .s-desc{ color:#aba69a }
+  body.night .amtag, body.night .s-meta a:hover{ color:var(--brand) }
+  body.night .fc-cat{ background:#1e232a; color:var(--brand) }
+  body.night .navb.tran{ background:#1e232a; color:var(--brand) }
+  body.night .navb.walk, body.night .navb.walk2{ background:#1b241e; color:#8fc49c }
+  body.night .exprow, body.night .netrow, body.night .chkitem,
+  body.night .costlist .row{ border-color:var(--line) }
+  body.night .mchip, body.night .raterow, body.night .txrow,
+  body.night .dgh, body.night .foodmini{ background:var(--surf); border-color:var(--line) }
+  body.night .empty-state .em{ opacity:.8 }
 
   /* ===== 匯出 PDF ===== */
   #pdfBtn{ cursor:pointer; border:1px solid rgba(255,255,255,.22); background:transparent;
@@ -749,6 +826,22 @@ function pushToCloud(){
   if(!STATE_REF) return;
   _localEcho = true;
   STATE_REF.set(DB).catch(err=>{ _localEcho=false; toast('雲端儲存失敗：'+((err&&err.code)||'')); });
+}
+
+/* 主題：存在這台裝置的瀏覽器，不寫進行程資料，所以每個人可以各看各的 */
+let theme=(function(){ try{ return localStorage.getItem('theme')||'warm'; }catch(e){ return 'warm'; } })();
+function applyTheme(){
+  document.body.classList.toggle('night', theme==='night');
+  const b=document.getElementById('themeBtn');
+  if(b){ b.textContent = theme==='night'? '☀' : '☾';
+         b.title = theme==='night'? '切換成暖色' : '切換成夜色'; }
+}
+function toggleTheme(){
+  theme = (theme==='night'? 'warm':'night');
+  try{ localStorage.setItem('theme',theme); }catch(e){}
+  applyTheme();
+  if(curTab==='itin' && itinMode==='day') drawDayMap(curDay);   // 路線顏色跟著主題重畫
+  toast(theme==='night'? '夜色模式 🌙' : '暖色模式 ☀️');
 }
 
 // 切換檢視 / 編輯模式
@@ -1084,6 +1177,7 @@ function toggleMapMode(){
   try{ localStorage.setItem('mapMode',mapMode); }catch(e){}
   drawDayMap(curDay);
 }
+function routeColor(){ return theme==='night'? '#d9ac5f' : '#cf6a39'; }
 function mapTogBtn(){
   return '<button class="dmap-tog" onclick="toggleMapMode()">'+(mapMode==='real'?'🗺️ 街道圖':'🧭 簡化圖')+'</button>';
 }
@@ -1158,7 +1252,7 @@ function leafletAdd(m,p){
     iconSize:[25,25], iconAnchor:[12,12]})}).addTo(m).bindPopup(esc(p.name));
   if(m.__ll.length>1){
     if(m.__line) m.removeLayer(m.__line);
-    m.__line=L.polyline(m.__ll,{color:'#cf6a39',weight:3,opacity:.85,dashArray:'7 7'}).addTo(m);
+    m.__line=L.polyline(m.__ll,{color:routeColor(),weight:3,opacity:.85,dashArray:'7 7'}).addTo(m);
     m.fitBounds(m.__ll,{padding:[30,30], maxZoom:16});
   }else{
     m.setView(m.__ll[0],13);
@@ -1176,8 +1270,9 @@ function daySvg(pts){
   const sc=Math.min((W-2*pad)/spanX,(H-2*pad)/spanY);
   const X=g=>W/2+(g-cLng)*k*sc, Y=t=>H/2-(t-cLat)*sc;
   const xy=pts.map(p=>[X(p.lng),Y(p.lat)]);
+  const RC=routeColor();
   const line=xy.length>1? '<polyline points="'+xy.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')
-    +'" fill="none" stroke="#cf6a39" stroke-width="2.4" stroke-dasharray="7 7" stroke-linejoin="round"/>':'';
+    +'" fill="none" stroke="'+RC+'" stroke-width="2.4" stroke-dasharray="7 7" stroke-linejoin="round"/>':'';
   // 標籤：擺得下才標，重疊就跳過
   const boxes=[], tw=s=>{ let w=0; for(const ch of s) w+=/[　-鿿＀-￯]/.test(ch)?10:5.6; return w; };
   const hit=(x,y,w,h)=>boxes.some(b=>!(x+w<b[0]||x>b[0]+b[2]||y+h<b[1]||y>b[1]+b[3]));
@@ -1195,18 +1290,22 @@ function daySvg(pts){
   });
   const dots=xy.map((p,i)=>{
     const o=pts[i], lab=o.label||String(i+1), st=!!o.start;
-    return '<g><circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="11" fill="'+(st?'#fff':'#cf6a39')
-      +'" stroke="'+(st?'#cf6a39':'#fff')+'" stroke-width="2.5"/>'
+    const TXT = theme==='night'? '#17140e' : '#fff';
+    const BG = theme==='night'? '#15181d' : '#fff';
+    return '<g><circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="11" fill="'+(st?BG:RC)
+      +'" stroke="'+(st?RC:BG)+'" stroke-width="2.5"/>'
       +'<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+(st?4:3.8)).toFixed(1)+'" font-size="'+(st?11:11)
-      +'" font-weight="800" fill="#fff" text-anchor="middle">'+(st?'':lab)+'</text>'
+      +'" font-weight="800" fill="'+TXT+'" text-anchor="middle">'+(st?'':lab)+'</text>'
       +(st? '<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+4.5).toFixed(1)+'" font-size="12" text-anchor="middle">🏨</text>':'')
       +'</g>';
   }).join('');
   let grid='';
-  for(let gx=0;gx<=W;gx+=60) grid+='<line x1="'+gx+'" y1="0" x2="'+gx+'" y2="'+H+'" stroke="#e7e3da" stroke-width="1"/>';
-  for(let gy=0;gy<=H;gy+=60) grid+='<line x1="0" y1="'+gy+'" x2="'+W+'" y2="'+gy+'" stroke="#e7e3da" stroke-width="1"/>';
+  const GL = theme==='night'? '#1e232a' : '#e7e3da';
+  for(let gx=0;gx<=W;gx+=60) grid+='<line x1="'+gx+'" y1="0" x2="'+gx+'" y2="'+H+'" stroke="'+GL+'" stroke-width="1"/>';
+  for(let gy=0;gy<=H;gy+=60) grid+='<line x1="0" y1="'+gy+'" x2="'+W+'" y2="'+gy+'" stroke="'+GL+'" stroke-width="1"/>';
+  const MAPBG = theme==='night'? '#14171c' : '#f3f1ea';
   return '<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">'
-    + '<rect width="'+W+'" height="'+H+'" fill="#f3f1ea"/>'+grid+line+dots+labels+'</svg>';
+    + '<rect width="'+W+'" height="'+H+'" fill="'+MAPBG+'"/>'+grid+line+dots+labels+'</svg>';
 }
 function slot(cls,tag,txt){
   const empty = !txt.trim();
@@ -3210,6 +3309,7 @@ initFirebase();          // 連上雲端
 setEdit(false);          // 預設「檢視模式」（別人打開只能看）
 load();                  // 先用本地／範例資料立刻顯示（離線也能看）
 _booting = false;
+applyTheme();
 renderAll();
 startSync();             // 接上雲端即時同步：別人重整就看到你最新的
 if(location.hash==='#edit') toggleEdit();   // 網址加 #edit 可直接跳出密碼框

@@ -444,6 +444,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .mkr{ width:25px; height:25px; border-radius:50%; background:var(--accent); color:#fff;
     font-size:12px; font-weight:800; display:grid; place-items:center;
     border:2.5px solid #fff; box-shadow:0 2px 6px rgba(0,0,0,.3); }
+  .mkr.ho{ background:#fff; border-color:var(--accent); font-size:13px; }   /* 起點用圖示 */
   .leaflet-container{ font-family:inherit; background:#eceae4; }
 
   /* 日期橫條 */
@@ -484,11 +485,17 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
     background:var(--brand); color:#fff; font-size:10.5px; font-weight:800;
     display:grid; place-items:center; border:2px solid var(--bg); }
   .s-body{ flex:1; min-width:0; padding-top:1px; }
+  /* 起點（昨晚住的地方）：灰階、不佔編號，跟真正的站點區隔開 */
+  .srow.start{ padding-bottom:4px; }
+  .s-ic.start{ background:#eef0ef; box-shadow:inset 0 0 0 1.5px #e0e3e1; }
+  .srow.start .s-name{ font-size:15px; font-weight:700; color:#5c6a72; }
+  .srow.start .s-meta{ margin-top:3px; }
   .s-top{ display:flex; align-items:baseline; gap:9px; flex-wrap:wrap; }
   .s-time{ font-size:14px; font-weight:800; color:var(--accent); letter-spacing:.3px; }
   .s-name{ font-size:16.5px; font-weight:800; line-height:1.35; }
-  .s-desc{ font-size:13px; color:#5f6c74; line-height:1.65; margin-top:3px;
-    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  /* 介紹全展開，不截行；保留原本的換行（條列才不會黏成一坨） */
+  .s-desc{ font-size:13px; color:#5f6c74; line-height:1.68; margin-top:4px;
+    white-space:pre-wrap; word-break:break-word; }
   .s-meta{ display:flex; gap:13px; flex-wrap:wrap; font-size:11.5px; color:var(--muted);
     font-weight:700; margin-top:6px; }
   .s-meta a{ color:var(--brand2); text-decoration:none; }
@@ -551,6 +558,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   #printArea .pr-daydate{ font-size:11.5px; font-weight:700; color:#6b625a; margin-left:8px; }
   #printArea .pr-daytitle{ font-size:16.5px; font-weight:800; margin-top:4px; }
   #printArea .pr-period{ font-size:10.5px; font-weight:800; color:#8a7f73; margin:9px 0 1px; letter-spacing:1px; }
+  #printArea .pr-start{ font-size:11px; color:#6b625a; margin:2px 0 4px; font-weight:700; }
   #printArea .pr-stop{ position:relative; margin-left:4px; padding:3.5px 0 3.5px 15px; border-left:2px solid #e7e0d6;
     break-inside:avoid; page-break-inside:avoid; }
   #printArea .pr-stop::before{ content:""; position:absolute; left:-5px; top:10px; width:8px; height:8px;
@@ -878,13 +886,52 @@ function stopIcon(st){
   return '📍';
 }
 
+/* ===== 每天的起點＝前一晚住的地方 =====
+   不寫進 stops，是即時算出來的一列。三種情況不顯示：
+   前一天沒填住宿、住宿欄填的其實是航班、今天前兩站本來就已經有那個地方。 */
+const FLIGHT_WORDS=/(登機|班機|航班|起飛|飛機|搭機|boarding|flight)/i;
+const FLIGHT_CODE=/\b[A-Z]{2}\d{2,4}\b/;          // JX803 這種班號
+function isFlightText(s){ s=(s||'').trim(); return !!s && (FLIGHT_WORDS.test(s)||FLIGHT_CODE.test(s)); }
+/* 比對是不是同一個地方：「富士豪景酒店」和「富士豪景飯店」要認得出來 */
+function normPlace(s){
+  return (s||'').toLowerCase()
+    .replace(/[\s　,，、。.．\-－–—()（）]/g,'')
+    .replace(/(飯店|酒店|旅館|旅店|民宿|客棧|hotel|hostel|inn|lodge|ryokan|guesthouse|apartment|公寓)/g,'');
+}
+function samePlace(a,b){
+  a=normPlace(a); b=normPlace(b);
+  if(a.length<2 || b.length<2) return false;
+  return a.indexOf(b)>=0 || b.indexOf(a)>=0;
+}
+function lastNightStart(i){
+  const t=trip();
+  if(!t || t.startFromLastNight===false) return null;
+  if(i<=0) return null;                                  // 第一天沒有前一晚
+  const lg=((t.days[i-1]||{}).lodging||'').trim();
+  if(!lg || isFlightText(lg)) return null;
+  const s=(t.days[i].stops||[]);
+  for(let k=0;k<Math.min(2,s.length);k++)
+    if(samePlace(s[k].name,lg) || samePlace(s[k].q,lg)) return null;   // 已經排進今天了，不重複
+  return {name:lg, q:lg, _start:true, vague:normPlace(lg).length<2};
+}
+function startRow(i){
+  const st=lastNightStart(i); if(!st) return '';
+  return '<div class="srow start" onclick="openDay('+i+')">'
+    + '<div class="s-ic start">🏨</div>'
+    + '<div class="s-body"><div class="s-top"><span class="s-name">'+esc(st.name)+'</span></div>'
+    + '<div class="s-meta"><span>起點・昨晚住宿</span>'
+    + '<a href="'+mapsSearch(st.q)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 地圖</a>'
+    + '</div></div></div>';
+}
+
 function stopList(d,idx){
   const s=d.stops||[];
-  if(!s.length) return '<div class="empty-state" style="padding:34px 16px">'
+  const sr=startRow(idx);
+  if(!s.length) return sr+'<div class="empty-state" style="padding:'+(sr?'18px':'34px')+' 16px">'
     +'<div class="em">📍</div><div style="font-weight:800;color:var(--ink)">這天還沒排站點</div>'
     +'<div style="margin-top:6px;font-size:13px">按右下角的 ＋ 加第一站</div></div>';
   const PERIOD={am:'上午',pm:'下午',ev:'晚上'};
-  let lastP=null, out='';
+  let lastP=null, out=sr;
   s.forEach((st,i)=>{
     let p=periodOf(st.time); if(p===null) p=lastP||'am';
     if(p!==lastP){ out+='<div class="speriod">'+PERIOD[p]+'</div>'; lastP=p; }
@@ -955,22 +1002,24 @@ async function drawDayMap(i){
   const box=document.getElementById('dayMap'); if(!box) return;
   const seq=++_mapSeq;
   const d=trip().days[i];
-  const stops=(d.stops||[]).filter(x=>((x.q||x.name||'').trim()));
+  const st0=lastNightStart(i);
+  const stops=((st0 && !st0.vague)? [st0]:[]).concat((d.stops||[]).filter(x=>((x.q||x.name||'').trim())));
   box.innerHTML='<div class="dmap-in" id="dayMapIn"></div>'+mapTogBtn()+'<div class="dmap-prog" id="dayMapProg"></div>';
   if(!stops.length){ mapMsg('這天還沒有站點<br>加了站點就會畫出當天路線'); return; }
   mapMsg('定位中…');
   const useReal = (mapMode==='real') && await ensureLeaflet();
   if(seq!==_mapSeq) return;
-  const pts=[]; let lm=null;
+  const pts=[]; let lm=null, n=0;
   for(let k=0;k<stops.length;k++){
     mapProg('定位中… '+k+'/'+stops.length);
     const v=await geocode(stops[k]);
     if(seq!==_mapSeq) return;                       // 已經切到別天，這次作廢
+    const label = stops[k]._start? '🏨' : String(++n);   // 起點用圖示，不佔編號
     if(!v) continue;
-    pts.push({lat:v.lat,lng:v.lng,name:stops[k].name||stops[k].q});
+    pts.push({lat:v.lat,lng:v.lng,name:stops[k].name||stops[k].q,label:label,start:!!stops[k]._start});
     if(useReal){
       if(!lm) lm=leafletStart();
-      leafletAdd(lm, pts[pts.length-1], pts.length);
+      leafletAdd(lm, pts[pts.length-1]);
     }else{
       const inn=document.getElementById('dayMapIn'); if(inn) inn.innerHTML=daySvg(pts);
     }
@@ -991,10 +1040,11 @@ function leafletStart(){
   setTimeout(()=>{ try{ m.invalidateSize(); }catch(e){} },80);
   return m;
 }
-function leafletAdd(m,p,n){
+function leafletAdd(m,p){
   if(!m) return;
   m.__ll.push([p.lat,p.lng]);
-  L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',html:'<div class="mkr">'+n+'</div>',
+  L.marker([p.lat,p.lng],{icon:L.divIcon({className:'',
+    html:'<div class="mkr'+(p.start?' ho':'')+'">'+(p.label||'')+'</div>',
     iconSize:[25,25], iconAnchor:[12,12]})}).addTo(m).bindPopup(esc(p.name));
   if(m.__ll.length>1){
     if(m.__line) m.removeLayer(m.__line);
@@ -1033,8 +1083,15 @@ function daySvg(pts){
       break;
     }
   });
-  const dots=xy.map((p,i)=>'<g><circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="11" fill="#cf6a39" stroke="#fff" stroke-width="2.5"/>'
-    +'<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+3.8).toFixed(1)+'" font-size="11" font-weight="800" fill="#fff" text-anchor="middle">'+(i+1)+'</text></g>').join('');
+  const dots=xy.map((p,i)=>{
+    const o=pts[i], lab=o.label||String(i+1), st=!!o.start;
+    return '<g><circle cx="'+p[0].toFixed(1)+'" cy="'+p[1].toFixed(1)+'" r="11" fill="'+(st?'#fff':'#cf6a39')
+      +'" stroke="'+(st?'#cf6a39':'#fff')+'" stroke-width="2.5"/>'
+      +'<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+(st?4:3.8)).toFixed(1)+'" font-size="'+(st?11:11)
+      +'" font-weight="800" fill="#fff" text-anchor="middle">'+(st?'':lab)+'</text>'
+      +(st? '<text x="'+p[0].toFixed(1)+'" y="'+(p[1]+4.5).toFixed(1)+'" font-size="12" text-anchor="middle">🏨</text>':'')
+      +'</g>';
+  }).join('');
   let grid='';
   for(let gx=0;gx<=W;gx+=60) grid+='<line x1="'+gx+'" y1="0" x2="'+gx+'" y2="'+H+'" stroke="#e7e3da" stroke-width="1"/>';
   for(let gy=0;gy<=H;gy+=60) grid+='<line x1="0" y1="'+gy+'" x2="'+W+'" y2="'+gy+'" stroke="#e7e3da" stroke-width="1"/>';
@@ -1778,6 +1835,11 @@ function openEditTrip(id){
           <div class="field" style="flex:1"><label>人數</label><input id="t_ppl" type="number" min="1" value="${t.people||1}"></div>
           <div class="field" style="flex:1"><label>幣別</label><input id="t_cur" value="${esc(t.currency||'TWD')}"></div>
         </div>
+        <div class="field"><label>起點顯示</label>
+          <label class="ck"><input type="checkbox" id="t_start0" ${t.startFromLastNight===false?'':'checked'}>
+            每天最前面顯示「昨晚住的地方」當起點</label>
+          <div class="hint">前一天沒填住宿、或住宿欄填的是航班（例：JX803 15:10登機），就不會顯示。</div>
+        </div>
         <div class="btn-row">
           <button class="btn" onclick="saveTripEdit('${t.id}')">儲存</button>
           <button class="btn ghost" onclick="openManage()">取消</button>
@@ -1805,6 +1867,8 @@ function saveTripEdit(id){
   _expApply(t, i=> i<newLen? i : null);  // 被刪掉的那幾天，記帳改成「未指定」
   t.name=name; t.subtitle=val('t_sub');
   t.people=Number(val('t_ppl'))||1; t.currency=val('t_cur')||'TWD';
+  const sb=document.getElementById('t_start0');
+  if(sb) t.startFromLastNight = !!sb.checked;
   save(); renderAll(); openManage();
   toast('已更新：'+name+'（'+newLen+' 天）');
 }
@@ -2594,10 +2658,12 @@ function prMapSection(){
 /* ---------- 匯出 PDF（封面 ／ 行程 ／ 清單 ／ 地圖） ---------- */
 function prStops(d){
   const s=d.stops||[];
-  if(!s.length) return '<div class="pr-none">這天沒有安排站點。</div>';
   const dayIdx=(trip().days||[]).indexOf(d);
+  const st0=lastNightStart(dayIdx);
+  const sr = st0? '<div class="pr-start">🏨 起點・昨晚住宿：'+esc(st0.name)+'</div>' : '';
+  if(!s.length) return sr+'<div class="pr-none">這天沒有安排站點。</div>';
   const PERIOD={am:'🌅 上午',pm:'☀️ 下午',ev:'🌙 晚上'};
-  let lastP=null, out='';
+  let lastP=null, out=sr;
   s.forEach((st,i)=>{
     let p=periodOf(st.time); if(p===null) p=lastP||'am';
     if(p!==lastP){ out+=`<div class="pr-period">${PERIOD[p]}</div>`; lastP=p; }

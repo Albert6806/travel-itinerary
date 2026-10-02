@@ -927,6 +927,53 @@ const MOVE_LABEL={walk:'步行',transit:'大眾運輸',cable:'纜車',drive:'開
 const MOVE_HINT={walk:'步行會自動估，可留空',transit:'例：地鐵 20min',cable:'例：纜車 25min',drive:'例：開車 30min',flight:'例：航班 3h40m',boat:'例：渡輪 40min'};
 const MOVE_GMODE={walk:'walking',transit:'transit',cable:'transit',drive:'driving',flight:'transit',boat:'transit'};
 
+/* ---------- 開車時間自動估（OSRM 公開服務，免費、不用 API key） ----------
+   OSRM 只有汽車路網（demo 伺服器的 foot/bike profile 其實回的是汽車結果，不能用），
+   所以這裡只拿來估「開車」；步行仍用下面的直線估算，大眾運輸沒有免費來源只能手填。 */
+const DRIVE={};                    // 記憶體：dayIdx:stopIdx → {mins,km} 或 null
+const RT_KEY='travelRouteCache_v1';
+function rtLoad(){ try{ return JSON.parse(localStorage.getItem(RT_KEY)||'{}'); }catch(e){ return {}; } }
+function rtSave(o){ try{ localStorage.setItem(RT_KEY, JSON.stringify(o)); }catch(e){} }
+function fmtMins(m){ return m>=60 ? (Math.floor(m/60)+' 小時'+(m%60? ' '+(m%60)+' 分':'')) : (m+' 分'); }
+/* 兩點經緯度 → 真實路網的開車時間與距離；查過的存進瀏覽器快取，同一段不重複打 */
+async function driveRoute(a,b){
+  if(!a||!b||a.lat==null||b.lat==null) return null;
+  const k=[a.lat.toFixed(5),a.lng.toFixed(5),b.lat.toFixed(5),b.lng.toFixed(5)].join(',');
+  const c=rtLoad();
+  if(k in c) return c[k];
+  let v=null;
+  try{
+    const r=await fetch('https://router.project-osrm.org/route/v1/driving/'
+      +a.lng+','+a.lat+';'+b.lng+','+b.lat+'?overview=false');
+    const j=await r.json();
+    const rt=j&&j.routes&&j.routes[0];
+    if(j.code==='Ok'&&rt&&rt.duration!=null)
+      v={mins:Math.max(1,Math.round(rt.duration/60)), km:Math.round(rt.distance/100)/10};
+  }catch(e){}
+  if(v){ c[k]=v; rtSave(c); }   // 只存查成功的；失敗不存，下次重整還會再試一次
+  return v;
+}
+function driveText(v){ return v? '約 '+fmtMins(v.mins)+'・'+v.km+' km（開車估）' : ''; }
+
+/* 把 Google Maps 上複製來的時間轉成乾淨格式
+   "25 min"／"1 hr 20 min"／"1 小時 20 分"／"1:20"／"25" → "25min"／"1h20m" */
+function parseDur(s){
+  s=(''+(s||'')).replace(/\s+/g,' ').trim();
+  if(!s) return '';
+  let h=0, m=0, got=false, mm;
+  if((mm=s.match(/^(\d{1,2}):([0-5]\d)$/))){ h=+mm[1]; m=+mm[2]; got=true; }
+  if(!got){
+    if((mm=s.match(/(\d+(?:\.\d+)?)\s*(?:hr?s?|hours?|小時|小时|時)/i))){ h=parseFloat(mm[1]); got=true; }
+    if((mm=s.match(/(\d+)\s*(?:mins?|minutes?|m|分鐘|分钟|分)(?![a-z])/i))){ m=+mm[1]; got=true; }
+  }
+  if(!got && (mm=s.match(/^(\d+)$/))){ m=+mm[1]; got=true; }
+  if(!got) return '';
+  m += Math.round((h%1)*60); h=Math.floor(h);
+  if(m>=60){ h+=Math.floor(m/60); m=m%60; }
+  if(!h && !m) return '';
+  return h? (h+'h'+(m? m+'m':'')) : (m+'min');
+}
+
 // 走路自動估：兩點經緯度 → 分鐘（1.35 路網係數、時速 4.8km）
 function walkMins(a,b){
   if(!a||!b||a.lat==null||b.lat==null) return null;
@@ -953,12 +1000,18 @@ async function estimateWalks(i){
   try{
     const d=trip().days[i]; const s=d.stops||[]; let any=false;
     for(let k=1;k<s.length;k++){
-      const wkey=i+':'+k;
-      if(s[k].moveMode==='walk' && !s[k].move && WALK[wkey]===undefined){
+      const wkey=i+':'+k, mode=s[k].moveMode;
+      if(s[k].move) continue;                      // 手填過的不碰
+      if(mode==='walk' && WALK[wkey]===undefined){
         const a=await geocode(s[k-1]), b=await geocode(s[k]);
         const m=walkMins(a,b);
         WALK[wkey] = m!=null? m : 0;
         if(m!=null) any=true;
+      } else if(mode==='drive' && DRIVE[wkey]===undefined){
+        const a=await geocode(s[k-1]), b=await geocode(s[k]);
+        const v=await driveRoute(a,b);
+        DRIVE[wkey] = v || null;
+        if(v) any=true;
       }
     }
     const dm=document.getElementById('dayModal');
@@ -992,8 +1045,10 @@ function stopEditorHtml(){
         </select></div>
         <div><label id="ml_${i}">${MOVE_ICON[s.moveMode||'transit']} ${MOVE_LABEL[s.moveMode||'transit']}・從上一站到這站</label>
           <div style="display:flex;gap:6px;align-items:center">
-            <input id="mv_${i}" placeholder="${MOVE_HINT[s.moveMode||'transit']}" value="${esc(s.move||'')}" oninput="_edStops[${i}].move=this.value">
+            <input id="mv_${i}" placeholder="${MOVE_HINT[s.moveMode||'transit']}" value="${esc(s.move||'')}" oninput="_edStops[${i}].move=this.value" onpaste="movePaste(event,${i})">
             <button type="button" class="se-q" onclick="queryMove(${i})">🔎 查</button>
+            <button type="button" class="se-q" onclick="pasteMove(${i})" title="把剪貼簿裡 Google 的時間貼進來">📋</button>
+            <button type="button" class="se-q" id="au_${i}" style="${(s.moveMode||'transit')==='drive'?'':'display:none'}" onclick="autoMove(${i})" title="自動算這段開車時間">⚡</button>
           </div>
         </div>
       </div>`:'<div class="hint" style="margin:-2px 0 8px">第一站＝當天起點，不用填通勤。</div>'}
@@ -1013,12 +1068,46 @@ function queryMove(i){
   const a=_edStops[i-1].q||_edStops[i-1].name, b=_edStops[i].q||_edStops[i].name;
   if(!a||!b){ toast('前後兩站都要先填地點'); return; }
   window.open(mapsUrl(a,b,MOVE_GMODE[_edStops[i].moveMode]||'transit'),'_blank');
-  toast('看到時間後，填回「通勤時間」欄');
+  toast('複製 Google 上的時間，回來按 📋 就自動填好');
 }
 function setMoveMode(i,v){
   _edStops[i].moveMode=v;
   var l=document.getElementById('ml_'+i); if(l) l.textContent=(MOVE_ICON[v]||'')+' '+(MOVE_LABEL[v]||'')+'・從上一站到這站';
   var m=document.getElementById('mv_'+i); if(m) m.placeholder=MOVE_HINT[v]||'';
+  var a=document.getElementById('au_'+i); if(a) a.style.display=(v==='drive'?'':'none');
+}
+/* 在通勤欄位直接貼上 Google 的字串 → 自動解析成乾淨格式（解析不出來就照原樣貼） */
+function movePaste(ev,i){
+  const cd=ev.clipboardData||window.clipboardData;
+  const raw=cd? (cd.getData('text')||cd.getData('text/plain')||'') : '';
+  const d=parseDur(raw);
+  if(!d) return;
+  ev.preventDefault();
+  setMoveVal(i,d); toast('已填入：'+d);
+}
+function setMoveVal(i,txt){
+  _edStops[i].move=txt;
+  const el=document.getElementById('mv_'+i); if(el) el.value=txt;
+}
+/* 📋 按鈕：直接讀剪貼簿（Safari 會先問你要不要允許） */
+async function pasteMove(i){
+  let raw='';
+  try{ raw=await navigator.clipboard.readText(); }
+  catch(e){ toast('瀏覽器不給讀剪貼簿，請點進欄位用 Cmd+V 貼上'); return; }
+  const d=parseDur(raw) || (''+raw).replace(/\s+/g,' ').trim().slice(0,40);
+  if(!d){ toast('剪貼簿是空的'); return; }
+  setMoveVal(i,d); toast('已填入：'+d);
+}
+/* ⚡ 按鈕：用 OSRM 算這段開車時間，直接寫進欄位 */
+async function autoMove(i){
+  if(i<1) return;
+  toast('正在算開車時間…');
+  const a=await geocode(_edStops[i-1]), b=await geocode(_edStops[i]);
+  if(!a||!b){ toast('前後兩站的地圖定位查不到，請把「🗺️ 地圖定位」填成清楚的地址'); return; }
+  const v=await driveRoute(a,b);
+  if(!v){ toast('算不出這段路線（可能跨海或太遠）'); return; }
+  const txt='開車 '+fmtMins(v.mins)+'（'+v.km+' km）';
+  setMoveVal(i,txt); toast('已填入：'+txt);
 }
 
 // 依抵達時刻判斷時段：<12 上午、12–18 下午、>=18 晚上
@@ -1043,6 +1132,7 @@ function routeSection(d){
       const a=s[i-1].q||s[i-1].name, b=st.q||st.name;
       let mv=st.move;
       if(!mv && mode==='walk' && WALK[idx+':'+i]) mv='約 '+WALK[idx+':'+i]+' 分（步行估）';
+      if(!mv && mode==='drive' && DRIVE[idx+':'+i]) mv=driveText(DRIVE[idx+':'+i]);
       items+=`<div class="tln-move"><span class="tln-move-pill">${MOVE_ICON[mode]||'🚆'} ${mv?esc(mv):(MOVE_LABEL[mode]||'交通')}</span>`+
         `<a class="tln-move-q" href="${mapsUrl(a,b,MOVE_GMODE[mode]||'transit')}" target="_blank" rel="noopener">🔎 查交通</a></div>`;
     }
@@ -1104,7 +1194,9 @@ function editDay(i){
       <div class="field"><label>當日花費（${trip().currency}）</label><input id="e_price" type="number" value="${d.price!=null?d.price:''}" placeholder="留空代表無"></div>
       <div class="field"><label>每日站點（地點・時刻・通勤・停留・介紹，依順序）</label>
         <div id="stopEditorWrap">${stopEditorHtml()}</div>
-        <div class="hint">時間軸會依這個順序呈現。通勤時間按「🔎 查」看 Google 結果再填；停留自己填；知名景點的介紹會自動補上。</div></div>
+        <div class="hint">時間軸會依這個順序呈現。<b>步行和開車會自動估</b>（開車可按 ⚡ 寫進欄位）。<br>
+          大眾運輸／火車／纜車沒有免費的自動來源，按「🔎 查」開 Google Maps，複製時間後按 📋 就會自動填好。<br>
+          ⚠️ Google 的連結沒辦法預設出發時間，開出來是查「現在」的班次 —— 查瑞士火車這類跟時段有關的，記得在 Google 頁面上把出發時間改成行程當天。</div></div>
       <div style="display:flex;gap:10px">
         <div class="field" style="flex:1"><label>地區（導航查詢用）</label><input id="e_area" value="${esc(d.area||'')}" placeholder="例：Paris"></div>
         <div class="field" style="flex:1"><label>城市（對應美食清單）</label><input id="e_city" value="${esc(d.city||'')}" placeholder="例：巴黎"></div>
@@ -2144,6 +2236,7 @@ function prStops(d){
       const mode=st.moveMode||'transit';
       let mv=st.move;
       if(!mv && mode==='walk' && WALK[dayIdx+':'+i]) mv='約 '+WALK[dayIdx+':'+i]+' 分（步行估）';
+      if(!mv && mode==='drive' && DRIVE[dayIdx+':'+i]) mv=driveText(DRIVE[dayIdx+':'+i]);
       out+=`<div class="pr-move">${MOVE_ICON[mode]||'🚆'} ${mv?esc(mv):(MOVE_LABEL[mode]||'交通')}</div>`;
     }
     out+=`<div class="pr-stop">`+

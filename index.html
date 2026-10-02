@@ -7,21 +7,34 @@
 <title>旅遊行程系統</title>
 <style>
 :root{
-  --bg:#f7f5f1; --card:#ffffff; --ink:#1e2a31; --muted:#8c959b;
-  --line:#edebe5; --brand:#1b4a56; --brand2:#2f7f86; --accent:#cf6a39;
+  --bg:#f3eee1; --card:#fffdf8; --ink:#2a2a22; --muted:#938c7c;
+  --line:#e8e1d0; --brand:#3f5e45; --brand2:#5c7f5f; --accent:#c4703c;
+  --side:#44573f; --side-ink:#eef2e4;
+  --hero:linear-gradient(162deg,#33472f 0%,#46613f 46%,#5c7f5f 100%);
   --gold:#c99a3a; --am:#e9a23b; --pm:#3a86a8; --ev:#5b5b8a;
-  --ok:#2e9e6b;
-  --shadow:0 2px 10px rgba(30,45,55,.055);      /* 原本太重，整頁看起來像後台 */
-  --shadow2:0 10px 30px rgba(30,45,55,.10);
-  --radius:20px;
+  --ok:#4e8f5f;
+  --shadow:0 2px 12px rgba(90,75,45,.07);
+  --shadow2:0 12px 34px rgba(90,75,45,.13);
+  --radius:22px;
+}
+/* B 版：保留原本的深青，只換暖底（body.alt 切換，用來比較） */
+body.alt{
+  --bg:#f4f1e9; --card:#ffffff; --ink:#1e2a31; --muted:#8c959b;
+  --line:#eae5da; --brand:#1b4a56; --brand2:#2f7f86; --accent:#cf6a39;
+  --side:#17414d; --side-ink:#e6f0f0;
+  --hero:linear-gradient(165deg,#0c2831 0%,#133d48 46%,#1a5660 100%);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;padding:0}
 body{
   font-family:"PingFang TC","Noto Sans TC","Microsoft JhengHei",system-ui,sans-serif;
   background:var(--bg);color:var(--ink);line-height:1.6;
-  padding-bottom:80px;
+  padding-bottom:96px;
 }
+/* 很淡的紙紋，讓底色不要像一塊平板的色塊 */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E")}
+.app{position:relative;z-index:1}
 button{font-family:inherit;cursor:pointer;border:none;background:none}
 a{color:inherit}
 .wrap{max-width:1100px;margin:0 auto;padding:0 16px}
@@ -30,8 +43,8 @@ a{color:inherit}
 /* Banner：深色、少裝飾。層次靠字級、字距和留白，不靠色塊 */
 header{
   background:
-    radial-gradient(120% 95% at 82% -15%, rgba(255,255,255,.085), transparent 58%),
-    linear-gradient(165deg,#0c2831 0%,#133d48 46%,#1a5660 100%);
+    radial-gradient(120% 95% at 82% -15%, rgba(255,255,255,.1), transparent 58%),
+    var(--hero);
   color:#fff;padding:13px 0 30px;position:relative;overflow:hidden;
 }
 header::after{content:"";position:absolute;left:0;right:0;bottom:0;height:130px;
@@ -66,17 +79,47 @@ header>.wrap{position:relative;z-index:1}
   font-size:12px;font-weight:500;letter-spacing:.06em;opacity:.78}
 .hmeta i{font-style:normal;opacity:.3}
 
-/* Tabs */
-.tabs{display:flex;gap:4px;margin:14px 0 4px;background:#fff;padding:5px;border-radius:16px;
-  box-shadow:var(--shadow);position:sticky;top:8px;z-index:20}
-.tabs button{flex:1;padding:11px 6px;border-radius:12px;font-weight:700;font-size:13.5px;
-  letter-spacing:.14em;color:var(--muted);transition:.15s;
-  display:flex;align-items:center;justify-content:center}
-.tabs button.on{background:var(--brand);color:#fff}
-.tabs .em{font-size:16px}
-@media(min-width:680px){
-  .tabs{justify-content:center}
-  .tabs button{flex:0 0 auto;padding:11px 30px}
+/* ===== 導覽：手機固定在底部、桌面移到左側欄 ===== */
+.side .side-hd, .side .side-ft{display:none}
+.tabs{
+  position:fixed;left:0;right:0;bottom:0;z-index:70;display:flex;margin:0;
+  background:var(--card);border-radius:0;
+  padding:6px 4px calc(6px + env(safe-area-inset-bottom));
+  box-shadow:0 -5px 22px rgba(90,75,45,.11);
+}
+.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:7px 2px;border-radius:14px;font-weight:700;font-size:10.5px;letter-spacing:.08em;
+  color:var(--muted);transition:.15s;background:none}
+.tabs button svg{width:21px;height:21px;fill:none;stroke:currentColor;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.tabs button.on{color:var(--brand)}
+.tabs button.on svg{stroke-width:2}
+
+@media(min-width:900px){
+  .app{display:flex;align-items:flex-start;gap:22px;max-width:1340px;margin:0 auto;padding:18px 24px 0}
+  .side{position:sticky;top:18px;flex:0 0 220px;background:var(--side);color:var(--side-ink);
+    border-radius:26px;padding:24px 14px 18px;box-shadow:var(--shadow2)}
+  .side .side-hd{display:block;padding:0 12px 20px}
+  .side-k{font-size:9.5px;letter-spacing:.24em;opacity:.5;font-weight:700}
+  .side-v{font-size:17px;font-weight:800;margin-top:8px;letter-spacing:.05em;line-height:1.35}
+  .side-s{font-size:11.5px;opacity:.55;margin-top:5px;letter-spacing:.05em}
+  .side .side-ft{display:block;margin-top:22px;padding:14px 12px 0;
+    border-top:1px solid rgba(255,255,255,.13);font-size:10px;opacity:.42;line-height:1.7;letter-spacing:.04em}
+  .tabs{position:static;flex-direction:column;gap:3px;background:none;box-shadow:none;padding:0}
+  .tabs button{flex:none;flex-direction:row;justify-content:flex-start;gap:12px;
+    padding:11px 14px;border-radius:15px;font-size:13.5px;letter-spacing:.11em;
+    color:rgba(255,255,255,.7)}
+  .tabs button svg{width:19px;height:19px}
+  .tabs button:hover{background:rgba(255,255,255,.09);color:#fff}
+  .tabs button.on{background:var(--card);color:var(--brand)}
+  .main{flex:1;min-width:0}
+  .main > .wrap{max-width:none;padding:0 30px}
+  header{border-radius:26px;padding:20px 0 30px}
+  header > .wrap{max-width:none;padding:0 30px}
+  body{padding-bottom:30px}
+  .main > footer{display:none}
+  .fab{bottom:28px}
+  .toast{bottom:28px}
 }
 
 /* Section */
@@ -248,10 +291,28 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
   background:var(--ink);color:#fff;padding:11px 20px;border-radius:999px;font-size:14px;font-weight:600;
   opacity:0;transition:.3s;z-index:2000;pointer-events:none;box-shadow:0 8px 30px rgba(0,0,0,.3)}
+.toast{bottom:92px}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 </style>
 </head>
 <body>
+<div class="app">
+<aside class="side">
+  <div class="side-hd">
+    <div class="side-k">目前行程</div>
+    <div class="side-v" id="sideName">—</div>
+    <div class="side-s" id="sideSub"></div>
+  </div>
+  <nav class="tabs">
+    <button class="on" data-tab="itin" onclick="setTab('itin')"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3.5"/><path d="M8 2.5v4M16 2.5v4M3 10.5h18"/></svg><span>行程</span></button>
+    <button data-tab="food" onclick="setTab('food')"><svg viewBox="0 0 24 24"><path d="M7 2.5v7.5a2.2 2.2 0 002.2 2.2h.3V21.5M7 2.5v6M10.4 2.5v6M17.6 2.5c-1.4 2-2 4.2-2 6.2 0 1.6.8 2.5 2 2.5v10.3"/></svg><span>美食</span></button>
+    <button data-tab="cost" onclick="setTab('cost')"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="13.5" rx="3.5"/><path d="M2.5 10.5h19M17 14.8h2.2"/><path d="M6 6V4.6A2 2 0 018 2.6h7"/></svg><span>費用</span></button>
+    <button data-tab="check" onclick="setTab('check')"><svg viewBox="0 0 24 24"><path d="M9.5 6h11M9.5 12h11M9.5 18h11"/><path d="M3.2 5.9l1.4 1.4 2.6-2.8M3.2 11.9l1.4 1.4 2.6-2.8M3.2 17.9l1.4 1.4 2.6-2.8"/></svg><span>清單</span></button>
+    <button data-tab="split" onclick="setTab('split')"><svg viewBox="0 0 24 24"><circle cx="9" cy="7.6" r="3.3"/><path d="M2.8 20.2c0-3.4 2.8-5.6 6.2-5.6s6.2 2.2 6.2 5.6"/><circle cx="17.8" cy="9.2" r="2.4"/><path d="M15.9 14.9c3.1.3 5.3 2.4 5.3 5.3"/></svg><span>分帳</span></button>
+  </nav>
+  <div class="side-ft">離線可用 · 加入主畫面當 App</div>
+</aside>
+<div class="main">
 <header>
   <div class="wrap">
     <div class="htop">
@@ -271,23 +332,17 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   </div>
 </header>
 
-<div class="wrap">
-  <div class="tabs">
-    <button class="on" data-tab="itin" onclick="setTab('itin')">行程</button>
-    <button data-tab="food" onclick="setTab('food')">美食</button>
-    <button data-tab="cost" onclick="setTab('cost')">費用</button>
-    <button data-tab="check" onclick="setTab('check')">清單</button>
-    <button data-tab="split" onclick="setTab('split')">分帳</button>
+  <div class="wrap">
+    <div id="view-itin" class="view"></div>
+    <div id="view-food" class="view" style="display:none"></div>
+    <div id="view-cost" class="view" style="display:none"></div>
+    <div id="view-check" class="view" style="display:none"></div>
+    <div id="view-split" class="view" style="display:none"></div>
   </div>
 
-  <div id="view-itin" class="view"></div>
-  <div id="view-food" class="view" style="display:none"></div>
-  <div id="view-cost" class="view" style="display:none"></div>
-  <div id="view-check" class="view" style="display:none"></div>
-  <div id="view-split" class="view" style="display:none"></div>
-</div>
-
-<footer>離線可用 · 資料存在此裝置瀏覽器 · 建議加入主畫面當 App 用</footer>
+  <footer>離線可用 · 資料存在此裝置瀏覽器 · 建議加入主畫面當 App 用</footer>
+  </div><!-- /.main -->
+</div><!-- /.app -->
 
 <!-- 匯出 PDF 用的列印版內容（螢幕上隱藏，只有列印時出現） -->
 <div id="printArea"></div>
@@ -485,6 +540,9 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .dchip.today .dn::after{ content:""; display:inline-block; width:5px; height:5px; border-radius:50%;
     background:var(--accent); vertical-align:middle; margin-left:4px; }
 
+  .panel{ background:var(--card); border-radius:22px; padding:18px 18px 22px;
+    box-shadow:var(--shadow); margin-top:6px; }
+  @media(min-width:900px){ .panel{ padding:24px 26px 28px; } }
   /* 當天抬頭 */
   .dhead{ display:flex; align-items:flex-start; gap:12px; margin:2px 0 6px; }
   .dh-l{ flex:1; min-width:0; }
@@ -538,7 +596,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   .mvrow a:hover{ color:var(--brand2); border-color:var(--brand2); }
 
   /* 浮動新增按鈕 */
-  .fab{ position:fixed; right:18px; bottom:24px; width:54px; height:54px; border-radius:50%;
+  .fab{ position:fixed; right:18px; bottom:84px; width:54px; height:54px; border-radius:50%;
     background:var(--accent); color:#fff; font-size:30px; font-weight:300; line-height:1;
     display:grid; place-items:center; z-index:60; box-shadow:0 7px 22px rgba(207,106,57,.42); }
   .fab:active{ transform:scale(.92); }
@@ -803,6 +861,9 @@ function slug(){ return 'trip-'+Math.abs(Date.now()).toString(36)+'-'+(DB.trips.
 function renderHeader(){
   const t=trip();
   document.getElementById('hName').textContent=t.name;
+  const sn=document.getElementById('sideName'); if(sn) sn.textContent=t.name;
+  const ss=document.getElementById('sideSub');
+  if(ss) ss.textContent = t.days.length? (t.days.length+' 天 · '+t.people+' 人') : (t.people+' 人');
   const sub=document.getElementById('hSub');
   sub.textContent=t.subtitle||''; sub.style.display=t.subtitle?'':'none';
   const n=t.days.length, a=n? t.days[0].date:'', b=n? t.days[n-1].date:'';
@@ -856,8 +917,8 @@ function renderItin(){
   v.innerHTML = modeBar()
     + '<div class="dmap" id="dayMap"></div>'
     + dayStrip(t)
-    + dayHead(d,curDay)
-    + '<div class="slist">'+stopList(d,curDay)+'</div>'
+    + '<section class="panel">'+dayHead(d,curDay)
+    + '<div class="slist">'+stopList(d,curDay)+'</div></section>'
     + '<button class="fab editonly" title="新增一站" onclick="quickAddStop('+curDay+')">＋</button>';
   stripIntoView();
   drawDayMap(curDay);

@@ -769,9 +769,16 @@ function toggleEdit(){
     if(STATE_REF) STATE_REF.once('value').then(s=>{ if(!s.val()) pushToCloud(); });
   } else { toast('密碼不對 🔒'); }
 }
-// 城市概略座標，用於「找我附近的美食」定位（緯度, 經度）
 const WALK={};   // 步行估算結果只放記憶體，不寫進行程資料
-const AREAS={'巴黎':[48.8566,2.3522],'蒙特勒':[46.4312,6.9107],'策馬特':[46.0207,7.7491],'格林德瓦':[46.6242,8.0342]};
+/* 城市座標（「找我附近的」用）。這份是**查證過**的內建表 ——
+   中文地名丟 Nominatim 很容易查到別的地方（「策馬特」曾查成黑龍江克山縣），
+   所以常用的先寫死。沒在表裡的城市會從美食清單的城市名自動查、查過就快取，
+   新增行程不需要再手動補座標。 */
+const AREAS={
+  '巴黎':[48.8566,2.3522], '蒙特勒':[46.4312,6.9107], '策馬特':[46.0207,7.7491], '格林德瓦':[46.6242,8.0342],
+  '東京':[35.6769,139.7639], '新宿':[35.6922,139.7006], '立川':[35.7139,139.4078],
+  '河口湖':[35.5131,138.7448], '富士吉田':[35.4875,138.8078], '高尾山':[35.6311,139.2561]
+};
 
 /* ---------- storage ---------- */
 function load(){
@@ -1349,17 +1356,37 @@ function saveStays(){
   });
   t.stays=map; save(); renderFood(); renderItin(); toast('住宿已更新');
 }
+/* 這趟行程實際會用到的城市座標：內建表優先，沒有的就用城市名即時查（geoFetch 會快取）。
+   候選城市來自美食清單的「城市」欄和住宿對照表，所以只會查到你真的填過的地方。 */
+async function tripAreas(){
+  const t=trip();
+  const names=[...new Set([]
+    .concat((t.food||[]).map(f=>(f.area||'').trim()))
+    .concat(Object.keys(t.stays||{}).map(s=>s.trim()))
+    .filter(Boolean))];
+  const out={};
+  for(let i=0;i<names.length;i++){
+    const n=names[i];
+    if(AREAS[n]){ out[n]={lat:AREAS[n][0], lng:AREAS[n][1]}; continue; }
+    const v=await geoFetch(n);
+    if(v && v.lat!=null) out[n]={lat:v.lat, lng:v.lng};
+  }
+  return out;
+}
 function locateFood(){
   if(!navigator.geolocation){ toast('此裝置不支援定位'); return; }
+  if(!(trip().food||[]).length){ toast('這趟還沒有美食清單'); return; }
   toast('定位中…');
-  navigator.geolocation.getCurrentPosition(p=>{
+  navigator.geolocation.getCurrentPosition(async p=>{
     const la=p.coords.latitude, lo=p.coords.longitude;
-    let best=null,bd=Infinity;
-    for(const c in AREAS){ const d=haversine(la,lo,AREAS[c][0],AREAS[c][1]); if(d<bd){bd=d;best=c;} }
-    if(best && (trip().food||[]).some(f=>f.area===best)){
-      foodFilter=best; setTab('food'); renderFood();
-      toast('已定位：'+best+'（約 '+Math.round(bd)+' km）');
-    } else { toast('附近沒有對應的美食清單'); }
+    const areas=await tripAreas();
+    let best=null, bd=Infinity;
+    for(const c in areas){ const d=haversine(la,lo,areas[c].lat,areas[c].lng); if(d<bd){ bd=d; best=c; } }
+    if(!best){ toast('查不到美食清單那些城市的位置'); return; }
+    if(bd>150){ toast('最近的是 '+best+'（約 '+Math.round(bd)+' km），不算在附近'); return; }
+    if(!(trip().food||[]).some(f=>f.area===best)){ toast('附近沒有對應的美食清單'); return; }
+    foodFilter=best; setTab('food'); renderFood();
+    toast('已定位：'+best+'（約 '+Math.round(bd)+' km）');
   }, e=>{ toast(e.code===1?'請允許定位權限':'定位失敗，訊號不足'); }, {timeout:8000, maximumAge:60000});
 }
 function addFood(){

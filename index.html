@@ -27,11 +27,13 @@
 }
 /* ===== 夜色主題（黑底金） ===== */
 body.night{
-  --bg:#0b0d10; --card:#171a1f; --ink:#ebe6db; --muted:#8b8780;
-  --line:#272b32; --brand:#dcc083; --brand2:#c2a469; --accent:#d9ac5f;
-  --side:#13161a; --side-ink:#e8e1d2; --ok:#6fae7e;
-  --hero:linear-gradient(162deg,#12151a 0%,#1a1e25 55%,#242a33 100%);
-  --surf:linear-gradient(180deg,#1c2026 0%,#15181d 100%);
+  /* 底幾乎純黑，面板再亮一階才浮得起來 —— 黑金的立體感來自這個落差 */
+  --bg:#000104; --card:#101218; --ink:#e6dcc4; --muted:#8a8070;
+  --line:#2a2620; --brand:#e3c88b; --brand2:#c9ab6d; --accent:#e0b461;
+  --side:#05060a; --side-ink:#e3d6b4; --ok:#7fb98c;
+  --hero:linear-gradient(162deg,#04050a 0%,#0d0f16 55%,#161922 100%);
+  --surf:linear-gradient(180deg,#171a21 0%,#0e1015 100%);
+  --gline:rgba(227,200,139,.17);        /* 金色細線：黑金感的關鍵 */
   --elev:inset 0 1px 0 rgba(255,255,255,.065), inset 0 -1px 0 rgba(0,0,0,.65),
          0 2px 5px rgba(0,0,0,.5), 0 18px 34px -14px rgba(0,0,0,.85);
   --elev-sm:inset 0 1px 0 rgba(255,255,255,.06),
@@ -633,7 +635,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   /* ===== 夜色主題：金色的互動元素、深色的輸入與彈窗 ===== */
   body.night header{ background:
     radial-gradient(120% 95% at 82% -15%, rgba(217,172,95,.12), transparent 58%), var(--hero); }
-  body.night::before{ opacity:.25 }
+  body.night::before{ opacity:.14 }
   body.night .tabs{ background:var(--surf); box-shadow:0 -5px 22px rgba(0,0,0,.5) }
   body.night .tabs button.on{ color:var(--brand) }
   body.night .dchip.on,
@@ -660,7 +662,24 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   body.night .sheet-hd{ background:linear-gradient(135deg,#1a1e25,#262c35) }
   body.night .modal{ background:rgba(0,0,0,.66) }
   body.night .chip2{ background:var(--surf); color:var(--muted) }
-  body.night .leaflet-container{ background:#15181d }
+  /* 金色細線框住每一塊面板 */
+  body.night .panel, body.night .card, body.night .stat, body.night .side,
+  body.night header, body.night .dmap, body.night .foodcard, body.night .daycard,
+  body.night .dchip, body.night .vmode button, body.night .editbtn,
+  body.night .s-ic, body.night .foodmini{ border:1px solid var(--gline) }
+  body.night .tabs{ border-top:1px solid var(--gline) }
+  /* 標題字走金色，內文維持暖灰（全金會很難讀） */
+  body.night .htitle h1, body.night .dh-title, body.night .s-name,
+  body.night .side-v, body.night .stat .v, body.night .fc-name,
+  body.night .checkhd h3, body.night .food-group .gh, body.night .dc-title,
+  body.night .sheet-hd h2, body.night .info-box .v, body.night .tln-name,
+  body.night .netrow .nm, body.night .exprow .ed{ color:var(--brand) }
+  body.night .eyebrow, body.night .speriod, body.night .side-k,
+  body.night .dc-daynum{ color:var(--brand2) }
+  body.night .hmeta{ color:#cbbb95 }
+  body.night .s-desc{ color:#9a9183 }
+  body.night .s-time{ color:var(--accent) }
+  body.night .leaflet-container{ background:#0d0f13 }
   body.night .dmap-tog{ background:rgba(28,32,38,.95); color:var(--brand);
     box-shadow:0 2px 10px rgba(0,0,0,.6) }
   body.night .dmap-prog{ color:#8b8780 }

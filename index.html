@@ -200,7 +200,7 @@ header>.wrap{position:relative;z-index:1}
   font-size:14px;color:#39474f;white-space:pre-wrap;word-break:break-word}
 .tlrow .content a{color:var(--brand2);font-weight:700;word-break:break-all}
 .info-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
-.info-box{flex:1;min-width:150px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:var(--shadow)}
+.info-box{flex:1;min-width:150px;background:var(--surf);border-radius:16px;padding:13px 15px;box-shadow:var(--elev-sm)}
 .info-box .k{font-size:12px;color:var(--muted);font-weight:700;margin-bottom:4px}
 .info-box .v{font-size:15px;font-weight:800}
 .linkbtn{display:inline-flex;align-items:center;gap:7px;background:var(--brand2);color:#fff;
@@ -210,6 +210,7 @@ header>.wrap{position:relative;z-index:1}
   padding:9px 16px;border-radius:999px;font-weight:700;font-size:12.5px;
   letter-spacing:.1em;margin-top:8px}
 .editbtn:active{transform:translateY(1px)}
+.del-day{color:#c0392b}
 
 /* Cost view */
 .card{background:var(--surf);border-radius:var(--radius);box-shadow:var(--elev);
@@ -692,6 +693,10 @@ footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
   body.night .s-desc{ color:#aba69a }
   body.night .amtag, body.night .s-meta a:hover{ color:var(--brand) }
   body.night .fc-cat{ background:#1e232a; color:var(--brand) }
+  body.night .linkbtn{ background:var(--gold); color:var(--gold-ink) }
+  body.night .del-day{ color:#e0907f }
+  body.night .amtag{ background:#1b241e; color:#8fc49c; border-color:#2a3a2f }
+  body.night .routewrap .empty{ color:var(--muted) }
   body.night .navb.tran{ background:#1e232a; color:var(--brand) }
   body.night .navb.walk, body.night .navb.walk2{ background:#1b241e; color:#8fc49c }
   body.night .exprow, body.night .netrow, body.night .chkitem,
@@ -1138,9 +1143,9 @@ function lastNightStart(i){
     if(samePlace(s[k].name,lg) || samePlace(s[k].q,lg)) return null;   // 已經排進今天了，不重複
   return {name:lg, q:lg, _start:true, vague:normPlace(lg).length<2};
 }
-function startRow(i){
+function startRow(i,noClick){
   const st=lastNightStart(i); if(!st) return '';
-  return '<div class="srow start" onclick="openDay('+i+')">'
+  return '<div class="srow start"'+(noClick?'':' onclick="openDay('+i+')"')+'>'
     + '<div class="s-ic start">🏨</div>'
     + '<div class="s-body"><div class="s-top"><span class="s-name">'+esc(st.name)+'</span></div>'
     + '<div class="s-meta"><span>起點・昨晚住宿</span>'
@@ -1148,9 +1153,10 @@ function startRow(i){
     + '</div></div></div>';
 }
 
-function stopList(d,idx){
+function stopList(d,idx,noClick){
+  const CK = noClick? '' : ' onclick="openDay('+idx+')"';
   const s=d.stops||[];
-  const sr=startRow(idx);
+  const sr=startRow(idx,noClick);
   if(!s.length) return sr+'<div class="empty-state" style="padding:'+(sr?'18px':'34px')+' 16px">'
     +'<div class="em">📍</div><div style="font-weight:800;color:var(--ink)">這天還沒排站點</div>'
     +'<div style="margin-top:6px;font-size:13px">按右下角的 ＋ 加第一站</div></div>';
@@ -1163,7 +1169,7 @@ function stopList(d,idx){
     const meta=[];
     if(st.stay) meta.push('<span>⏱ 停留 '+esc(st.stay)+'</span>');
     meta.push('<a href="'+mapsSearch(st.q||st.name)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">📍 地圖</a>');
-    out+='<div class="srow" onclick="openDay('+idx+')">'
+    out+='<div class="srow"'+CK+'>'
       + '<div class="s-ic">'+stopIcon(st)+'<span class="s-n">'+(i+1)+'</span></div>'
       + '<div class="s-body"><div class="s-top">'
       + (st.time? '<span class="s-time">'+esc(st.time)+'</span>':'')
@@ -1786,7 +1792,20 @@ function periodOf(time){
   const m=/^\s*(\d{1,2})/.exec(time||''); if(!m) return null;
   const h=+m[1]; if(h<12) return 'am'; if(h<18) return 'pm'; return 'ev';
 }
+/* 彈窗裡的時間軸＝單日檢視的同一套站點清單，維持同一種視覺語言
+   （舊版 .tln-* 那套有寫死的淺色時段色塊，在夜色主題下整個穿幫） */
 function routeSection(d){
+  const idx=trip().days.indexOf(d);
+  const s=d.stops||[];
+  if(!s.length && !lastNightStart(idx)){
+    return `<div class="routewrap"><h3>行程時間軸</h3>
+      <div class="empty">這天還沒設定站點，點下方「✏️ 編輯這天」新增。</div></div>`;
+  }
+  setTimeout(()=>estimateWalks(idx),60);
+  return `<div class="routewrap"><h3>行程時間軸</h3>
+    <div class="slist">${stopList(d,idx,true)}</div></div>`;
+}
+function routeSectionOld(d){
   const s=d.stops||[];
   if(!s.length){
     return `<div class="routewrap"><h3>🧭 行程時間軸</h3>
@@ -1841,7 +1860,7 @@ function openDay(i){
       ${foodSection(d)}
       <div class="btn-row"><button class="editbtn" onclick="editDay(${i})">✏️ 編輯這天</button>
         <button class="editbtn" onclick="insertDayAfter(${i})">➕ 在後面插入一天</button>
-        <button class="editbtn" style="color:#c0392b" onclick="deleteDay(${i})">🗑️ 刪除這天</button></div>
+        <button class="editbtn del-day" onclick="deleteDay(${i})">🗑️ 刪除這天</button></div>
     </div>`;
   document.getElementById('dayModal').classList.add('on');
 }

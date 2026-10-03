@@ -1414,19 +1414,11 @@ function renderFood(){
         EDIT? '用下面的「➕ 新增推薦美食」加第一間'
             : '請先點右上角「檢視模式」輸入密碼，才能新增');
   const cityOpts=cities.map(c=>`<option value="${esc(c)}">`).join('');
-  const stays=t.stays||{};
-  const stayText=Object.keys(stays).map(c=>`${c} | ${stays[c].name||''} | ${stays[c].q||''}`).join('\n');
   v.innerHTML=`
     ${food.length?`<div class="food-hd">
       <button class="locbtn" onclick="locateFood()">📍 找我附近的</button>${chips}
     </div>`:''}
     ${body}
-    <div class="card editonly">
-      <h3 style="margin:0 0 6px;font-size:16px">🏨 各城市住宿（走路起點）</h3>
-      <div class="field"><textarea id="stayEditor" style="min-height:100px">${esc(stayText)}</textarea>
-        <div class="hint">一行一個城市：<b>城市 | 住宿名 | Google查詢字</b>。「🚶 從住宿走去」會用這裡當步行起點。</div></div>
-      <button class="btn" onclick="saveStays()">儲存住宿</button>
-    </div>
     <div class="card editonly">
       <h3 style="margin:0 0 10px;font-size:16px">➕ 新增推薦美食</h3>
       ${food.length?'':`<div class="hint" style="margin:-4px 0 12px">
@@ -1453,9 +1445,27 @@ function foodMeta(f){
   if(f.price) p.push(`<span class="prc">${esc(f.price)}</span>`);
   return p.length?`<div class="fc-meta">${p.join('')}</div>`:'';
 }
+/* 某個城市的住宿：直接用「城市」欄等於它、而且有填住宿的那一天，
+   不用再另外維護一張對照表（舊資料的 stays 還在就當備援） */
+function stayFor(area){
+  area=(area||'').trim(); if(!area) return null;
+  const t=trip();
+  const days=(t.days||[]).filter(x=>(x.city||'').trim()===area
+                                 && (x.lodging||'').trim()
+                                 && !isFlightText(x.lodging));
+  // ① 先找那天住宿填得夠具體的（「民宿」這種泛稱查不出位置）
+  const good=days.find(x=>normPlace(x.lodging).length>=2);
+  if(good){ const lg=good.lodging.trim(); return {q:lg, name:lg, vague:false}; }
+  // ② 再退回舊的手動對照表（有些行程那裡填得比較完整）
+  const s=(t.stays||{})[area];
+  if(s && (s.q||s.name)) return {q:s.q||s.name, name:s.name||'', vague:false};
+  // ③ 都沒有就回報「有住宿但太泛稱」，呼叫端不會給連結
+  if(days.length){ const lg=days[0].lodging.trim(); return {q:lg, name:lg, vague:true}; }
+  return null;
+}
 function walkUrlFor(f){
-  const s=(trip().stays||{})[f.area];
-  return (s&&s.q)? mapsUrl(s.q, f.q||f.name, 'walking') : null;
+  const s=stayFor(f.area);
+  return (s && s.q && !s.vague)? mapsUrl(s.q, f.q||f.name, 'walking') : null;
 }
 function foodCard(f){
   const w=walkUrlFor(f);
@@ -1506,21 +1516,13 @@ function saveFood(id){
   f.price=val('ef_price'); f.note=val('ef_note'); f.q=val('ef_q')||f.name;
   save(); closeModal('dayModal'); renderFood(); toast('已儲存');
 }
-function saveStays(){
-  if(!needEdit()) return;
-  const t=trip(); const map={};
-  val('stayEditor').split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{
-    const p=l.split('|').map(s=>s.trim());
-    if(p[0]) map[p[0]]={name:p[1]||'', q:p[2]||p[1]||''};
-  });
-  t.stays=map; save(); renderFood(); renderItin(); toast('住宿已更新');
-}
 /* 這趟行程實際會用到的城市座標：內建表優先，沒有的就用城市名即時查（geoFetch 會快取）。
    候選城市來自美食清單的「城市」欄和住宿對照表，所以只會查到你真的填過的地方。 */
 async function tripAreas(){
   const t=trip();
   const names=[...new Set([]
     .concat((t.food||[]).map(f=>(f.area||'').trim()))
+    .concat((t.days||[]).map(d=>(d.city||'').trim()))
     .concat(Object.keys(t.stays||{}).map(s=>s.trim()))
     .filter(Boolean))];
   const out={};

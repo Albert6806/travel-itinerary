@@ -2279,7 +2279,7 @@ const BUILTIN_GEO={
   "Vevey station":{lat:46.4629,lng:6.8434},
   "Café de Grancy":{lat:46.5153,lng:6.6286}
 };
-const GEO_KEY='travel_geo_v1';
+const GEO_KEY='travel_geo_v2';   // v1 裡有舊演算法查錯的座標，直接換 key 作廢
 let GEO=null;
 function geoLoad(){
   if(GEO) return GEO;
@@ -2299,18 +2299,33 @@ function geoSave(){ try{ localStorage.setItem(GEO_KEY, JSON.stringify(geoLoad())
 /* 查詢字備援：中英混寫（「Montreux車站」）、地址帶店名（「Angelina, ...75008 Paris」）
    這類字串直接查常常失敗、甚至查到別國同名的地方，所以依序換幾種寫法再試 */
 const GEO_CJK=/[　-〿一-鿿＀-￯]/g;
-const GEO_SUFFIX=/(train station|railway station|車站|觀景台|站台)/ig;
+const GEO_PAREN=/[（(][^）)]*[）)]/g;
+const GEO_SUFFIX=/(train station|railway station|車站|觀景台|站台|駅前|駅|站)/ig;
+const GEO_PREFIX=/^(JR東日本|JR西日本|JR九州|JR|京王|小田急|東急|東武|西武|東京メトロ|地下鐵|地下鉄)\s*/i;
+/* 查詢字備援。實測教訓：
+   ① 「站」原本沒處理（只認「車站」）→「高尾山站(山腰）」直接查到河北唐山一家公司
+   ② 只留拉丁字母會產生「JR」這種殘片 → 查到美國
+   ③ 中文被切成好幾段（「御茶 水站」）→ 查到中國
+   ④ 把城市接在後面**反而更糟**（「紅葉台 高尾山」→ 山東、「藥王院 高尾山」→ 濰坊），所以不做 */
 function geoVariants(q){
-  const v=[q];
+  const v=[];
   const push=s=>{ s=(s||'').replace(/\s+/g,' ').trim().replace(/^[,\s]+|[,\s]+$/g,''); if(s&&v.indexOf(s)<0) v.push(s); };
-  const base=q.replace(GEO_SUFFIX,' ');
-  push(base);
-  const latin=base.replace(GEO_CJK,' ');
-  if(/[A-Za-z]/.test(latin)) push(latin);          // 只剩數字的（如郵遞區號）不採用，會查到別國
-  const cjk=(base.match(new RegExp(GEO_CJK.source+'+','g'))||[]).join(' ');
-  push(cjk);
+  const noParen=q.replace(GEO_PAREN,' ');
+  const base=noParen.replace(GEO_SUFFIX,' ');
+  const noPre=base.replace(GEO_PREFIX,'');
+  // 像「高尾山站(山腰）」這種純名稱（沒有逗號、沒有數字），清乾淨的版本比原字串可信，先查
+  const bare = !/[,，\d]/.test(q) && noPre.replace(/\s+/g,'') !== q.replace(/\s+/g,'');
+  if(bare){ push(noPre); push(base); push(noParen); }
+  push(q);
+  push(noParen); push(base); push(noPre);
+  const latin=base.replace(GEO_CJK,' ').replace(/\s+/g,' ').trim();
+  if(/[A-Za-z]/.test(latin) && latin.length>=5 && /[\s\d]/.test(latin)) push(latin);
+  const runs=base.match(new RegExp(GEO_CJK.source+'+','g'))||[];
+  // 只有「連成一段、而且夠長」的中文才用；切碎的會查到莫名其妙的地方，
+  // 太短的像「日本」會查到整個國家的中心點
+  if(runs.length===1 && runs[0].length>=3 && !/^(日本|中國|台灣|臺灣|韓國|美國|法國|瑞士)$/.test(runs[0])) push(runs[0]);
   const seg=base.split(',').map(s=>s.trim()).filter(Boolean);
-  if(seg.length>1) push(seg[0]+' '+seg[seg.length-1]);   // 店名 + 城市，避免抓到同名的外國地點
+  if(seg.length>1) push(seg[0]+' '+seg[seg.length-1]);   // 店名 + 城市
   return v;
 }
 async function geoOne(s){

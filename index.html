@@ -827,6 +827,7 @@ const firebaseConfig = {
 };
 const EDIT_PASS = 'albert2026';   // ← 編輯密碼（只有你知道；要換就改這裡）
 let EDIT = false;                 // 目前是否為編輯模式
+const EDIT_SS = 'tripEditMode';   // 編輯模式記在 sessionStorage：重整不掉、關分頁就失效
 let _booting = true;              // 啟動階段：暫不寫雲端
 let _localEcho = false;           // 自己剛寫入，忽略下一次雲端回呼
 let STATE_REF = null;
@@ -890,11 +891,14 @@ function setEdit(on){
          b.classList.toggle('editing', on); }
 }
 function toggleEdit(){
-  if(EDIT){ setEdit(false); toast('已切回檢視模式'); return; }
+  if(EDIT){ setEdit(false); try{ sessionStorage.removeItem(EDIT_SS); }catch(e){}
+            toast('已切回檢視模式'); return; }
   const p = prompt('請輸入編輯密碼：');
   if(p===null) return;
   if(p===EDIT_PASS){
-    setEdit(true); toast('已進入編輯模式，改動會即時同步給大家 ✨');
+    setEdit(true);
+    try{ sessionStorage.setItem(EDIT_SS,'1'); }catch(e){}   // 重整後還留在編輯模式（關掉分頁就失效）
+    toast('已進入編輯模式，改動會即時同步給大家 ✨');
     if(STATE_REF) STATE_REF.once('value').then(s=>{ if(!s.val()) pushToCloud(); });
   } else { toast('密碼不對 🔒'); }
 }
@@ -908,6 +912,14 @@ const AREAS={
   '東京':[35.6769,139.7639], '新宿':[35.6922,139.7006], '立川':[35.7139,139.4078],
   '河口湖':[35.5131,138.7448], '富士吉田':[35.4875,138.8078], '高尾山':[35.6311,139.2561]
 };
+
+/* 內容類的修改一律要編輯模式。檢視模式下 save() 只寫本機，
+   重整就會被雲端蓋掉 —— 以前會跳「已加入」卻其實沒存到，很坑。 */
+function needEdit(){
+  if(EDIT) return true;
+  toast('請先點右上角「檢視模式」進入編輯模式');
+  return false;
+}
 
 /* ---------- storage ---------- */
 function load(){
@@ -1390,7 +1402,9 @@ function renderFood(){
     ? (Object.keys(groups).map(k=>`<div class="food-group">
         <div class="gh">📍 ${esc(k)}</div>${groups[k].map(foodCard).join('')}</div>`).join('')
         || '<div class="hint">這個城市還沒有推薦，換一個或按「全部」。</div>')
-    : emptyState('🍽️','還沒有推薦美食','用下面的「➕ 新增推薦美食」加第一間');
+    : emptyState('🍽️','還沒有推薦美食',
+        EDIT? '用下面的「➕ 新增推薦美食」加第一間'
+            : '請先點右上角「檢視模式」輸入密碼，才能新增');
   const cityOpts=cities.map(c=>`<option value="${esc(c)}">`).join('');
   const stays=t.stays||{};
   const stayText=Object.keys(stays).map(c=>`${c} | ${stays[c].name||''} | ${stays[c].q||''}`).join('\n');
@@ -1399,13 +1413,13 @@ function renderFood(){
       <button class="locbtn" onclick="locateFood()">📍 找我附近的</button>${chips}
     </div>`:''}
     ${body}
-    <div class="card">
+    <div class="card editonly">
       <h3 style="margin:0 0 6px;font-size:16px">🏨 各城市住宿（走路起點）</h3>
       <div class="field"><textarea id="stayEditor" style="min-height:100px">${esc(stayText)}</textarea>
         <div class="hint">一行一個城市：<b>城市 | 住宿名 | Google查詢字</b>。「🚶 從住宿走去」會用這裡當步行起點。</div></div>
       <button class="btn" onclick="saveStays()">儲存住宿</button>
     </div>
-    <div class="card">
+    <div class="card editonly">
       <h3 style="margin:0 0 10px;font-size:16px">➕ 新增推薦美食</h3>
       ${food.length?'':`<div class="hint" style="margin:-4px 0 12px">
         <b>「城市」是關鍵</b>：填什麼字，之後在每天的「城市（對應美食清單）」欄就要填一樣的字，
@@ -1477,6 +1491,7 @@ function editFood(id){
   document.getElementById('dayModal').classList.add('on');
 }
 function saveFood(id){
+  if(!needEdit()) return;
   const f=(trip().food||[]).find(x=>x.id===id); if(!f)return;
   f.name=val('ef_name'); f.area=val('ef_area'); f.cat=val('ef_cat')||'🍽️ 美食';
   const rt=val('ef_rating'); f.rating = rt===''?null:Number(rt);
@@ -1484,6 +1499,7 @@ function saveFood(id){
   save(); closeModal('dayModal'); renderFood(); toast('已儲存');
 }
 function saveStays(){
+  if(!needEdit()) return;
   const t=trip(); const map={};
   val('stayEditor').split('\n').map(l=>l.trim()).filter(Boolean).forEach(l=>{
     const p=l.split('|').map(s=>s.trim());
@@ -1525,6 +1541,7 @@ function locateFood(){
   }, e=>{ toast(e.code===1?'請允許定位權限':'定位失敗，訊號不足'); }, {timeout:8000, maximumAge:60000});
 }
 function addFood(){
+  if(!needEdit()) return;
   const name=val('nf_name'); if(!name){ toast('請輸入店名'); return; }
   const t=trip(); if(!t.food)t.food=[];
   const rt=val('nf_rating');
@@ -1535,6 +1552,7 @@ function addFood(){
   save(); renderFood(); toast('已加入：'+name);
 }
 function delFood(id){
+  if(!needEdit()) return;
   const t=trip(); t.food=(t.food||[]).filter(f=>f.id!==id); save(); renderFood();
 }
 function foodSection(d){
@@ -3321,6 +3339,7 @@ function renderAll(){ renderHeader(); renderItin(); renderFood(); renderCost(); 
 /* ---------- 啟動 ---------- */
 initFirebase();          // 連上雲端
 setEdit(false);          // 預設「檢視模式」（別人打開只能看）
+try{ if(sessionStorage.getItem(EDIT_SS)==='1') setEdit(true); }catch(e){}   // 同分頁重整保留編輯模式
 load();                  // 先用本地／範例資料立刻顯示（離線也能看）
 _booting = false;
 applyTheme();

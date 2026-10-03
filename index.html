@@ -2279,7 +2279,7 @@ const BUILTIN_GEO={
   "Vevey station":{lat:46.4629,lng:6.8434},
   "Café de Grancy":{lat:46.5153,lng:6.6286}
 };
-const GEO_KEY='travel_geo_v2';   // v1 裡有舊演算法查錯的座標，直接換 key 作廢
+const GEO_KEY='travel_geo_v3';   // v2 被 429 污染成一堆「查不到」，一併作廢重查
 let GEO=null;
 function geoLoad(){
   if(GEO) return GEO;
@@ -2328,13 +2328,35 @@ function geoVariants(q){
   if(seg.length>1) push(seg[0]+' '+seg[seg.length-1]);   // 店名 + 城市
   return v;
 }
+/* Nominatim 規定每秒最多一次。原本只有「同一個地點的不同備援字」之間有間隔，
+   不同站點之間完全沒有 → 開一天就連打七八次，很容易被回 429（Too Many Requests）。
+   改成全域排隊：任何兩次查詢之間都至少隔 1.1 秒。 */
+let _geoQueue=Promise.resolve(), _geoLastAt=0, _geoWarned=false;
+function geoThrottle(fn){
+  const run=async ()=>{
+    const wait=1150-(Date.now()-_geoLastAt);
+    if(wait>0) await new Promise(r=>setTimeout(r,wait));
+    _geoLastAt=Date.now();
+    return fn();
+  };
+  _geoQueue=_geoQueue.then(run, run);
+  return _geoQueue;
+}
+/* 回傳值的三種意思：
+   {lat,lng} = 查到　/　null = 真的查不到　/　{err} = 被擋或斷線（不算結論，不可以寫進快取） */
 async function geoOne(s){
-  try{
-    const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=zh-TW,en&q='+encodeURIComponent(s));
-    const j=await r.json();
-    if(j&&j[0]) return {lat:+j[0].lat, lng:+j[0].lon};
-  }catch(e){}
-  return null;
+  return geoThrottle(async ()=>{
+    try{
+      const r=await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=zh-TW,en&q='+encodeURIComponent(s));
+      if(!r.ok){
+        if(r.status===429 && !_geoWarned){ _geoWarned=true; toast('定位服務忙碌中，稍後會自動重試'); }
+        return {err:r.status};
+      }
+      const j=await r.json();
+      if(j&&j[0]) return {lat:+j[0].lat, lng:+j[0].lon};
+      return null;
+    }catch(e){ return {err:0}; }
+  });
 }
 const _geoInflight={};
 async function geoFetch(q){
@@ -2349,12 +2371,15 @@ async function _geoFetchOne(q){
   const g=geoLoad();
   const cm=(''+q).match(/^\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*$/);  // 直接填經緯度
   if(cm){ g[q]={lat:+cm[1],lng:+cm[2]}; geoSave(); return g[q]; }
-  let hit=null;
+  let hit=null, soft=false;
   const vs=geoVariants(q);
   for(let i=0;i<vs.length && !hit;i++){
-    if(i) await new Promise(r=>setTimeout(r,1100));   // 遵守 OSM 每秒一次的規範
-    hit=await geoOne(vs[i]);
+    const r=await geoOne(vs[i]);
+    if(r && r.err!==undefined){ soft=true; break; }   // 被擋／斷線：這次不下結論
+    if(r) hit=r;
   }
+  // soft 失敗不寫快取，否則一次被擋就永遠記成「查不到」，限流解除也不會再查
+  if(soft) return {lat:null,lng:null};
   g[q]= hit || {lat:null,lng:null};
   geoSave();
   return g[q];
